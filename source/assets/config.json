@@ -1,0 +1,37 @@
+{
+	"version": "1.0.0",
+	"general": {
+		"dependency": [
+			"storage"
+		]
+	},
+	"download": {
+		"file": "(id).(extension)",
+		"folder": "./downloads/",
+		"threads": 5,
+		"concurrent": 5
+	},
+	"navigator": {
+		"index": 0,
+		"pages": [
+			{
+				"type": "BROWSER",
+				"name": "language:all",
+				"args": {
+					"page": 0,
+					"clamp": 25,
+					"query": "language:all"
+				}
+			},
+			{
+				"type": "BROWSER",
+				"name": "language:korean",
+				"args": {
+					"page": 0,
+					"clamp": 25,
+					"query": "language:korean"
+				}
+			}
+		]
+	}
+}

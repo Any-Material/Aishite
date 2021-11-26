@@ -1,0 +1,12 @@
+# node.js
+/node_modules
+/package-lock.json
+# app
+/debugs
+/bundles
+/downloads
+/config.json
+/bookmark.json
+# electron
+/build
+/releases

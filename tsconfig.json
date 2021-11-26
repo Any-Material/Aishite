@@ -1,0 +1,42 @@
+{
+	"compilerOptions": {
+		"module": "commonjs",
+		"target": "ESNext",
+		"jsx": "react-jsx",
+		"paths": {
+			"@/*": [
+				"./source/*"
+			]
+		},
+		"strict": true,
+		"allowJs": true,
+		"importHelpers": true,
+		"esModuleInterop": true,
+		"resolveJsonModule": true,
+		"experimentalDecorators": true
+	},
+	"files": [
+		"source/typings/args.ts",
+		"source/typings/await.ts",
+		"source/typings/child.ts",
+		"source/typings/global.ts",
+		"source/typings/nullable.ts",
+		"source/typings/properties.ts",
+		"source/typings/stylesheet.ts"
+	],
+	"include": [
+		"**/*.ts",
+		"**/*.tsx",
+		"**/*.json"
+	],
+	"exclude": [
+		"/node_modules",
+		"/package-lock.json",
+		"/bundles",
+		"/downloads",
+		"/config.json",
+		"/bookmark.json",
+		"/build",
+		"/releases"
+	]
+}
