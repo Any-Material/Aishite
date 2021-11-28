@@ -3,8 +3,10 @@ import * as RPC from "discord-rpc";
 // states
 import { StateHandler } from "@/states";
 
-/** @see https://discord.com/developers/docs/rich-presence/how-to */
-class RichPresence {
+/**
+ * @see https://discord.com/developers/docs/rich-presence/how-to
+ */
+export class RichPresence {
 	public state?: string;
 	public details: string;
 	public startTimestamp?: number;
@@ -21,7 +23,23 @@ class RichPresence {
 	public joinSecret?: string;
 	public instance?: boolean;
 
-	constructor(args: Args<RichPresence>) {
+	constructor(args: {
+		state?: RichPresence["state"];
+		details: RichPresence["details"];
+		startTimestamp?: RichPresence["startTimestamp"];
+		endTimestamp?: RichPresence["endTimestamp"];
+		largeImageKey?: RichPresence["largeImageKey"];
+		largeImageText?: RichPresence["largeImageText"];
+		smallImageKey?: RichPresence["smallImageKey"];
+		smallImageText?: RichPresence["smallImageText"];
+		partyId?: RichPresence["partyId"];
+		partySize?: RichPresence["partySize"];
+		partyMax?: RichPresence["partyMax"];
+		matchSecret?: RichPresence["matchSecret"];
+		spectateSecret?: RichPresence["spectateSecret"];
+		joinSecret?: RichPresence["joinSecret"];
+		instance?: RichPresence["instance"];
+	}) {
 		this.state = args.state;
 		this.details = args.details;
 		this.startTimestamp = args.startTimestamp;
@@ -38,8 +56,11 @@ class RichPresence {
 		this.instance = args.instance;
 	}
 };
-/** @see https://discord.com/developers/applications/{application_id}/information */
-class DiscordRPC extends StateHandler<RichPresence> {
+
+/**
+ * @see https://discord.com/developers/applications/{application_id}/information
+ */
+ export class DiscordRPC extends StateHandler<RichPresence> {
 	private available: boolean;
 	private readonly client = new RPC.Client({ transport: "ipc" });
 
@@ -66,12 +87,15 @@ class DiscordRPC extends StateHandler<RichPresence> {
 		if (this.available) {
 			throw new Error();
 		}
-		this.client.login({ "clientId": secret }).then(() => {
-			this.available = true;
-		}).catch(() => {
+		this.client.login({ "clientId": secret }).then(() => { this.available = true; }).catch(() => {
 			setTimeout(() => {
 				this.login(secret);
-			}, 1000 * 60);
+			},
+			//
+			// 1000 milliseconds = 1 second
+			// 60 seconds = 1 minute
+			//
+			1000 * 60);
 		});
 	}
 	public update(presence: RichPresence = this.state, preserve: boolean = true) {
@@ -102,16 +126,20 @@ class DiscordRPC extends StateHandler<RichPresence> {
 	}
 }
 
-const singleton = new DiscordRPC({
-	state: new RichPresence({
-		details: "Starting...",
-		startTimestamp: Date.now(),
-		largeImageKey: "icon",
-		largeImageText: "Sombian#7940",
-		smallImageKey: "discord",
-		smallImageText: "discord.gg/Gp7tWCe"
-	}),
-	secret: "526951055079112724"
-});
-
-export default singleton;
+export default (
+	//
+	// singleton
+	//
+	new DiscordRPC({
+		state: new RichPresence({
+			details: "Starting...",
+			startTimestamp: Date.now(),
+			largeImageKey: "icon",
+			largeImageText: "Sombian#7940",
+			smallImageKey: "discord",
+			smallImageText: "discord.gg/Gp7tWCe",
+			partyId: "天運、我にあり"
+		}),
+		secret: "526951055079112724"
+	})
+)

@@ -10,6 +10,14 @@ const boilerplate = {
 			{
 				test: [/\.tsx?$/],
 				use: [{ loader: "ts-loader" }]
+			},
+			{
+				test: [/\.s?css$/],
+				use: [{ loader: "style-loader" }, { loader: "css-loader" }, { loader: "sass-loader" }]
+			},
+			{
+				test: [/\.png$/, /\.jpe?g$/, /\.gif$/, /\.svg$/],
+				use: [{ loader: "html-loader", options: { esModule: false } }]
 			}
 		]
 	},
@@ -20,11 +28,13 @@ const boilerplate = {
 		alias: {
 			"@": resolve_path("source")
 		},
-		extensions: [".js", ".jsx", ".ts", ".tsx", ".json"]
+		extensions: [".js", ".jsx", ".ts", ".tsx", ".scss", ".json"]
 	},
 	optimization: {
+		minimize: true,
 		minimizer: [
 			new (require("terser-webpack-plugin"))({
+				parallel: true,
 				terserOptions: {
 					output: {
 						ecma: 2020,
@@ -32,18 +42,14 @@ const boilerplate = {
 					},
 					compress: {
 						ecma: 2020,
-						unsafe: true,
 						drop_console: true
 					}
-				},
-				parallel: true
+				}
 			})
-		],
-		minimize: true
+		]
 	},
 	plugins: []
 };
-
 const main = {
 	...boilerplate,
 	target: "electron-main",
@@ -53,7 +59,6 @@ const main = {
 		filename: "main.js"
 	}
 };
-
 const preload = {
 	...boilerplate,
 	target: "electron-preload",
@@ -63,7 +68,6 @@ const preload = {
 		filename: "preload.js"
 	}
 };
-
 const renderer = {
 	...boilerplate,
 	target: "electron-renderer",
@@ -79,7 +83,6 @@ const renderer = {
 		})
 	]
 };
-
 module.exports = {
 	main: main,
 	preload: preload,

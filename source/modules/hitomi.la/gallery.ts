@@ -1,45 +1,133 @@
 // modules
 import request from "@/modules/request";
+// modules/hitomi
+import { Field, Tag } from "@/modules/hitomi.la/encode";
 
-export enum Category {
-	ID = "id",
-	TYPE = "type",
-	CHARACTER = "character",
-	LANGUAGE = "language",
-	POPULAR = "popular",
-	SERIES = "series",
-	ARTIST = "artist",
-	GROUP = "group",
-	TAG = "tag",
-	MALE = "male",
-	FEMALE = "female",
-	STATUS = "status"
-}
-
-export class GalleryTag {
-	public readonly type: Category;
-	public readonly value: string;
-
-	constructor(args: Args<GalleryTag>) {
-		this.type = args.type;
-		this.value = args.value;
+const selector = [
+	{
+		"key": "title",
+		"query": ".lillie a"
+	},
+	{
+		"key": "thumbnail",
+		"query": "img",
+		"attribute": "src"
+	},
+	{
+		"key": "artist",
+		"query": ".artist-list a"
+	},
+	{
+		"key": "date",
+		"query": ".date"
 	}
-	public url() {
-		switch (this.type) {
-			case Category.LANGUAGE: {
-				return `https://ltn.hitomi.la/index-${this.value}.nozomi`;
-			}
-			case Category.MALE:
-			case Category.FEMALE: {
-				return `https://ltn.hitomi.la/tag/${this.type}:${this.value.replace(/_/g, "%20")}-all.nozomi`;
-			}
-			default: {
-				return `https://ltn.hitomi.la/${this.type}/${this.value.replace(/_/g, "%20")}-all.nozomi`;
+];
+
+export class Gallery {
+	private common_js?: string;
+
+	constructor() {
+		request.GET("https://ltn.hitomi.la/common.js", { type: "text" }).then((response) => {
+			this.common_js = response.encode.split(/\nfunction\s/g)
+			.filter((section) => {
+				return new RegExp(`^(${[
+					"subdomain_from_galleryid",
+					"subdomain_from_url",
+					"url_from_url",
+					"full_path_from_hash",
+					"url_from_hash",
+					"url_from_url_from_hash"].join("|")})`
+				).test(section);
+			}).map((section) => {
+				return `function ${section}`;
+			}).join(("\n"));
+		});
+	}
+	public async block(id: number) {
+		const response = await request.GET(`https://ltn.hitomi.la/galleryblock/${id}.html`, { type: "text" });
+
+		switch (response.status.code) {
+			case 404: {
+				throw new Error("request failed");
 			}
 		}
+		const block: Record<string, Array<string>> = {}, document = new DOMParser().parseFromString(response.encode, "text/html");
+
+		let index = 0;
+
+		for (const element of document.querySelectorAll("td")) {
+			if (index % 2 === 0) {
+				block[element.innerText.toLowerCase()] = [];
+			} else {
+				block[Object.keys(block).last!]!.add(...element.innerText.split(/\s\s+/).filter((array) => array.length));
+			}
+			index++;
+		}
+		for (const extractor of Object.values(selector)) {
+			block[extractor.key] = Object.values(document.querySelectorAll(extractor.query)).map((element) => {
+				return extractor.attribute ? element.getAttribute(extractor.attribute)! : (element as HTMLElement).innerText ?? "N/A"
+			});
+
+			switch (extractor.key) {
+				case "thumbnail": {
+					block[extractor.key] = block[extractor.key]!.map((url) => `https:${url}`);
+					break;
+				}
+			}
+		}
+		return new GalleryBlock({
+			id: id,
+			type: block["type"].first!,
+			title: block["title"].first!,
+			group: block["group"]?.first,
+			series: block["series"]?.first,
+			language: block["language"].first!,
+			thumbnail: block["thumbnail"] as [string, string],
+			character: block["character"],
+			artist: block["artist"],
+			tags: block["tags"],
+			date: block["date"].first!
+		});
 	}
-	public toString() {
-		return `${this.type}:${this.value}`;
+	public async script(id: number) {
+		const response = await request.GET(`https://ltn.hitomi.la/galleries/${id}.js`, { type: "text" });
+
+		switch (response.status.code) {
+			case 404: {
+				throw new Error("request failed");
+			}
+		}
+		const script = JSON.parse(/var\sgalleryinfo\s=\s(.+?)(?=;)/.match(`${response.encode};`)!.group(1)!);
+
+		await until(() => Boolean(this.common_js));
+
+		return new GalleryScript({
+			id: script["id"],
+			type: script["type"],
+			title: script["title"],
+			language: script["language"],
+			files: Object.values(script["files"] as Array<Record<string, any>>).map((item) => {
+				return new GalleryFile({
+					//
+					// danger zone
+					//
+					url: eval(this.common_js + "url_from_url_from_hash(id, item)"),
+					//
+					// danger zone
+					//
+					name: item["name"],
+					width: item["width"],
+					height: item["height"]
+				});
+			}),
+			tags: Object.values(script["tags"] as Array<Record<string, any>>).map((item) => {
+				return new Tag({
+					field: item["male"] === 1 ? item["female"] === 1 ? Field.TAG : Field.MALE : Field.FEMALE,
+					value: item["tag"]
+				});
+			}),
+			date: script["date"]
+		});
 	}
 }
 
@@ -49,7 +137,12 @@ export class GalleryFile {
 	public readonly width: number;
 	public readonly height: number;
 
-	constructor(args: Args<GalleryFile>) {
+	constructor(args: {
+		url: GalleryFile["url"];
+		name: GalleryFile["name"];
+		width: GalleryFile["width"];
+		height: GalleryFile["height"];
+	}) {
 		this.url = args.url;
 		this.name = args.name;
 		this.width = args.width;
@@ -57,146 +150,74 @@ export class GalleryFile {
 	}
 }
 
-export type GalleryBlock = {
-	readonly id: number;
-	readonly type: string;
-	readonly title: string;
-	readonly language: string;
-	readonly thumbnail: [string, string];
-	readonly character?: Array<string>;
-	readonly artist?: Array<string>;
-	readonly series?: string;
-	readonly group?: string;
-	readonly tags?: Array<GalleryTag>;
-	readonly date: string;
+export class GalleryBlock {
+	public readonly id: number;
+	public readonly type: string;
+	public readonly title: string;
+	public readonly language: string;
+	public readonly thumbnail: [string, string];
+	public readonly character?: Array<string>;
+	public readonly artist?: Array<string>;
+	public readonly series?: string;
+	public readonly group?: string;
+	public readonly tags?: Array<string>;
+	public readonly date: string;
+
+	constructor(args: {
+		id: GalleryBlock["id"];
+		type: GalleryBlock["type"];
+		title: GalleryBlock["title"];
+		language: GalleryBlock["language"];
+		thumbnail: GalleryBlock["thumbnail"];
+		character?: GalleryBlock["character"];
+		artist?: GalleryBlock["artist"];
+		series?: GalleryBlock["series"];
+		group?: GalleryBlock["group"];
+		tags?: GalleryBlock["tags"];
+		date: GalleryBlock["date"];
+	}) {
+		this.id = args.id;
+		this.type = args.type;
+		this.title = args.title;
+		this.language = args.language;
+		this.thumbnail = args.thumbnail;
+		this.character = args.character;
+		this.artist = args.artist;
+		this.series = args.series;
+		this.group = args.group;
+		this.tags = args.tags;
+		this.date = args.date;
+	}
 }
 
-export type GalleryScript = {
-	readonly id: string;
-	readonly type: string;
-	readonly title: string;
-	readonly language: string;
-	readonly files: Array<GalleryFile>;
-	readonly tags?: Array<GalleryTag>;
-	readonly date: string;
+export class GalleryScript {
+	public readonly id: string;
+	public readonly type: string;
+	public readonly title: string;
+	public readonly language: string;
+	public readonly files: Array<GalleryFile>;
+	public readonly tags?: Array<Tag>;
+	public readonly date: string;
+
+	constructor(args: {
+		id: GalleryScript["id"];
+		type: GalleryScript["type"];
+		title: GalleryScript["title"];
+		language: GalleryScript["language"];
+		files: GalleryScript["files"];
+		tags?: GalleryScript["tags"];
+		date: GalleryScript["date"];
+	}) {
+		this.id = args.id;
+		this.type = args.type;
+		this.title = args.title;
+		this.language = args.language;
+		this.files = args.files;
+		this.tags = args.tags;
+		this.date = args.date;
+	}
 }
 
-let common_js: Nullable<string> = null;
-
-request.GET("https://ltn.hitomi.la/common.js", { type: "text" }).then((response) => {
-	common_js = response.encode.split(/\nfunction\s/g).filter((section) => /^(subdomain_from_galleryid|subdomain_from_url|url_from_url|full_path_from_hash|url_from_hash|url_from_url_from_hash)/.test(section)).map((section) => ["function", section].join("\u0020")).join(("\n"));
-});
-
-export async function GalleryBlock(id: number): Promise<GalleryBlock> {
-	const response = await request.GET(`https://ltn.hitomi.la/galleryblock/${id}.html`, { type: "text" });
-
-	switch (response.status.code) {
-		case 404: {
-			throw new Error();
-		}
-	}
-	const block: Record<string, Array<string>> = {}, document = new DOMParser().parseFromString(response.encode, "text/html");
-
-	let index = 0;
-
-	for (const element of document.querySelectorAll("td")) {
-		if (index % 2 === 0) {
-			block[element.innerText.toLowerCase()] = [];
-		} else {
-			block[Object.keys(block).last!]!.add(...element.innerText.split(/\s\s+/).filter((fragment) => fragment.length));
-		}
-		index++;
-	}
-
-	for (const extractor of Object.values([
-		{
-			"name": "title",
-			"query": "h1"
-		},
-		{
-			"name": "thumbnail",
-			"query": "img",
-			"attribute": "src"
-		},
-		{
-			"name": "artist",
-			"query": ".artist-list"
-		},
-		{
-			"name": "date",
-			"query": ".date"
-		}
-	])) {
-		block[extractor.name] = Object.values(document.querySelectorAll(extractor.query)).map((element) => {
-			return extractor.attribute ? element.getAttribute(extractor.attribute) ?? "N/A" : (element as HTMLElement).innerText ?? "N/A"
-		});
-
-		switch (extractor.name) {
-			case "artist": {
-				block[extractor.name] = block[extractor.name].map((artist) => artist.replace(/\s\s+/g, "").replace(/\n/g, ""));
-				break;
-			}
-			case "thumbnail": {
-				block[extractor.name] = block[extractor.name].map((thumbnail) => `https:${thumbnail}`);
-				break;
-			}
-		}
-	}
-
-	return {
-		id: id,
-		type: block["type"].first as string,
-		title: block["title"].first as string,
-		group: block["group"]?.first,
-		series: block["series"]?.first,
-		language: block["language"].first as string,
-		thumbnail: block["thumbnail"] as [string, string],
-		character: block["character"],
-		artist: block["artist"],
-		tags: block["tags"].map((tag) => {
-			return new GalleryTag({ type: /(♂)$/.test(tag) ? Category.MALE : /(♀)$/.test(tag) ? Category.FEMALE : Category.TAG, value: tag.replace(/\s?(♂|♀)/, "").replace(/\s/g, "_") });
-		}),
-		date: block["date"].first as string
-	};
-}
-
-export async function GalleryScript(id: number): Promise<GalleryScript> {
-	const response = await request.GET(`https://ltn.hitomi.la/galleries/${id}.js`, { type: "text" });
-
-	switch (response.status.code) {
-		case 404: {
-			throw new Error();
-		}
-	}
-	const script = JSON.parse(/^var\sgalleryinfo\s=\s(.+?)(?=;)/.match(`${response.encode};`)!.group(1)!);
-
-	await until(() => common_js !== null);
-
-	return {
-		id: script["id"],
-		type: script["type"],
-		title: script["title"],
-		language: script["language"],
-		files: Object.values(script["files"] as Array<any>).map((file) => {
-			return new GalleryFile({
-				//
-				// DANGER ZONE!
-				//
-				url: eval(common_js + "url_from_url_from_hash(id, file)"),
-				//
-				// DANGER ZONE!
-				//
-				name: file["name"],
-				width: file["width"],
-				height: file["height"]
-			});
-		}),
-		tags: Object.values(script["tags"] as Array<any>).map((tag) => {
-			return new GalleryTag({
-				type: tag["male"] ? tag["female"] ? Category.TAG : Category.MALE : Category.FEMALE,
-				value: tag["tag"]
-			});
-		}),
-		date: script["date"]
-	};
-}
+export default (
+	new Gallery()
+)

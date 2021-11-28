@@ -29,7 +29,6 @@ const boilerplate = {
 		})
 	]
 };
-
 compiler["main"].instance = webpack({
 	...main,
 	...boilerplate,
@@ -38,7 +37,6 @@ compiler["main"].instance = webpack({
 		...boilerplate.plugins
 	]
 }, () => { });
-
 compiler["preload"].instance = webpack({
 	...preload,
 	...boilerplate,
@@ -47,7 +45,6 @@ compiler["preload"].instance = webpack({
 		...boilerplate.plugins
 	]
 }, () => { });
-
 compiler["renderer"].instance = webpack({
 	...renderer,
 	...boilerplate,
@@ -56,19 +53,15 @@ compiler["renderer"].instance = webpack({
 		...boilerplate.plugins
 	]
 }, () => { });
-
 compiler["main"].instance.hooks.done.tap("done", () => {
-	return build("main");
+	build("main");
 });
-
 compiler["preload"].instance.hooks.done.tap("done", () => {
-	return build("preload");
+	build("preload");
 });
-
 compiler["renderer"].instance.hooks.done.tap("done", () => {
-	return build("renderer");
+	build("renderer");
 });
-
 function build(section) {
 	// update state
 	compiler[section].state = true;
@@ -82,11 +75,11 @@ function build(section) {
 					main: package.main,
 					version: package.version,
 					description: package.description
-				}), { }, () => {
+				}), {}, () => {
 					builder.build({
-						targets: builder.Platform.WINDOWS.createTarget("portable"),
+						targets: builder.Platform.WINDOWS.createTarget("zip"),
 						config: {
-							appId: "any.material.org.aishite",
+							appId: "org.sombian.aishite",
 							files: [
 								"build/*.js",
 								"build/*.json",
@@ -95,7 +88,7 @@ function build(section) {
 							directories: {
 								output: "releases"
 							},
-							icon: "../source/assets/aishite.ico",
+							icon: "../source/assets/icons/icon.ico",
 						}
 					});
 				}

@@ -1,0 +1,231 @@
+[data-component="gallery"] {
+	position: relative;
+	display: grid;
+	grid-template-areas:
+	"upper"
+	"lower";
+	grid-template-rows: 1fr 45px;
+	grid-template-columns: 1fr;
+	background-color: var(--colour_3);
+	transition: border-color var(--transition), background-color var(--transition);
+	> #upper {
+		position: relative;
+		overflow: hidden;
+		grid-area: upper;
+		margin: 10px 10px 0px 10px;
+		transition: border-color var(--transition);
+		> * {
+			position: absolute;
+			width: 100%;
+			height: 100%;
+			bottom: 0px;
+			&.fluid {
+				will-change: transform;
+			}
+		}
+		> [data-component="lazyload"] {
+			z-index: 0;
+			height: 100%;
+			opacity: 50%;
+			object-fit: cover;
+			transition: visibility 500ms, opacity var(--transition);
+			will-change: visibility, opacity;
+			&.censorship {
+				filter: blur(10px);
+			}
+		}
+		> #discovery {
+			z-index: 1;
+			position: relative;
+			color: var(--colour_5);
+			background-color: var(--colour_2);
+			transition: transform 500ms;
+			> #buttons {
+				position: absolute;
+				overflow: hidden;
+				right: 0px;
+				width: 50px;
+				height: 50px;
+				> [data-component="button"] {
+					// @see https://stackoverflow.com/questions/29758522/make-only-triangle-have-hover-effect-using-css
+					position: absolute;
+					// 70.75: sqrt((100^2)/2)
+					width: 70.75px;
+					height: 70.75px;
+					// 29.25: 100 - 70.75
+					bottom: 29.25px;
+					background-color: var(--colour_1);
+					transform: rotate(45deg) translateX(29.25%);
+					transition: border-color var(--transition), background-color var(--transition);
+					&:hover {
+						border-color: var(--colour_9);
+						background-color: var(--colour_2);
+					}
+				}
+			}
+			> #scrollable {
+				height: 100%;
+				> #bundle {
+					margin: 5px 10px;
+					font-size: 15px;
+					font-weight: bold;
+					> #key {
+						display: inline-flex;
+						flex-direction: row;
+						font-size: 12.5px;
+						max-width: 35ch;
+						height: 25px;
+						margin: 5px;
+						padding: 0px 5px;
+						background-color: var(--colour_3);
+						transition: border-color var(--transition), background-color var(--transition);
+						> #value {
+							color: var(--colour_9);
+							> #field {
+								&.male {
+									color: var(--colour_level_0);
+								}
+								&.female {
+									color: var(--colour_level_3);
+								}
+								&.tag {
+									color: var(--colour_level_1);
+								}
+							}
+						}
+						&:hover {
+							border-color: var(--colour_9);
+							background-color: var(--colour_5);
+						}
+						&.censorship {
+							border-color: var(--colour_1);
+							background-color: var(--colour_level_3);
+							> #value, > #value > #field {
+								color: var(--colour_1);
+							}
+						}
+					}
+				}
+				&::-webkit-scrollbar {
+					display: none;
+				}
+			}
+		}
+		> #buttons {
+			z-index: 1;
+			height: 45px;
+			border-left-width: 0px;
+			border-right-width: 0px;
+			border-bottom-width: 0px;
+			background-color: var(--colour_4);
+			transform: translateY(100%);
+			transition: border-color var(--transition), transform var(--transition);
+			> [data-component="button"] {
+				width: 45px;
+				height: 100%;
+				&:hover {
+					background-color: var(--colour_3);
+				}
+				&.highlight {
+					> svg {
+						fill: var(--colour_level_3);
+					}
+				}
+				> svg {
+					width: 20px;
+					height: 20px;
+				}
+			}
+		}
+	}
+	> #lower {
+		grid-area: lower;
+		display: grid;
+		grid-template-areas:
+		"title id";
+		grid-template-rows: 1fr;
+		grid-template-columns: 1fr 85px;
+		> * {
+			font-weight: bold;
+		}
+		> #title {
+			grid-area: title;
+			font-size: 15px;
+			margin-left: 10px;
+			color: var(--colour_9);
+		}
+		> #id {
+			grid-area: id;
+			font-size: 12.5px;
+			color: var(--colour_1);
+		}
+	}
+	> #status {
+		z-index: 0;
+		pointer-events: none;
+		position: absolute;
+		overflow: hidden;
+		width: 100%;
+		height: 100%;
+		> #ribbon {
+			overflow: hidden;
+			position: absolute;
+			top: 28px;
+			right: -46px;
+			width: 198.99px;
+			height: 50px;
+			transform: rotate(45deg);
+			color: var(--colour_1);
+			&.default {
+				display: none;
+			}
+			&.ERROR {
+				background-color: var(--colour_level_3);
+			}
+			&.QUEUED {
+				background-color: var(--colour_level_2);
+			}
+			&.WORKING {
+				background-color: var(--colour_level_1);
+			}
+			&.FINISHED {
+				background-color: var(--colour_level_0);
+			}
+		}
+	}
+	&.TITLE, &.BUTTONS {
+		#upper {
+			> #discovery {
+				transform: translateY(100%);
+			}
+		}
+	}
+	&.INFORMATION {
+		#upper {
+			> [data-component="lazyload"] {
+				visibility: hidden;
+			}
+			> #buttons {
+				transform: translateY(100%);
+			}
+		}
+	}
+	&:hover {
+		border-color: var(--colour_9);
+		background-color: var(--colour_5);
+		> #upper {
+			border-color: var(--colour_9);
+		}
+		&.TITLE, &.BUTTONS {
+			> #upper {
+				> [data-component="lazyload"] {
+					opacity: 100%;
+				}
+				> #buttons {
+					transform: translateY(0%);
+					border-color: var(--colour_9);
+				}
+			}
+		}
+	}
+}

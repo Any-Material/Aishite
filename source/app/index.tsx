@@ -1,137 +1,61 @@
-// common
-import Unit from "@/app/common/unit";
-import Color from "@/app/common/color";
-import { Props } from "@/app/common/props";
-import { Stateful, EventManager } from "@/app/common/framework";
-// layout
-import Row from "@/app/layout/row";
-import Size from "@/app/layout/size";
-import Spacer from "@/app/layout/spacer";
-import Column from "@/app/layout/column";
-import Draggable from "@/app/layout/draggable";
-// Statefuls
-import Button from "@/app/widgets/button";
-import Navigator from "@/app/widgets/navigator";
-import Viewport from "@/app/widgets/view";
-// assets
-import Close from "@/app/icons/close";
-import Maximize from "@/app/icons/maximize";
-import Minimize from "@/app/icons/minimize";
-import Unmaximize from "@/app/icons/unmaximize";
+// framework
+import React from "react";
+// style
+import "./index.scss";
+// components
+import TitleBar from "@/app/components/titlebar";
+import Overlay from "@/app/views/overlay";
+import Browser from "@/app/views/browser";
+import Viewer from "@/app/views/viewer";
+// states
+import navigation, { Viewport } from "@/states/navigation";
 // api
 import { BridgeEvent } from "@/api";
 
-class AppProps extends Props<undefined> {
-	constructor(args: Args<AppProps>) {
-		super(args);
-	}
+export interface AppProps extends Props {}
+
+export interface AppState {
+	view: Viewport;
+	terminal: boolean;
+	fullscreen: boolean;
 }
 
-class AppState {
-	public maximize: boolean;
-	public fullscreen: boolean;
-
-	constructor(args: Args<AppState>) {
-		this.maximize = args.maximize;
-		this.fullscreen = args.fullscreen;
-	}
-}
-
-class App extends Stateful<AppProps, AppState> {
-	protected create() {
-		return new AppState({ maximize: false, fullscreen: false });
-	}
-	protected events() {
-		return [
-			new EventManager(window.bridge, BridgeEvent.MAXIMIZE, () => {
-				this.setState({ ...this.state, maximize: true });
-			}),
-			new EventManager(window.bridge, BridgeEvent.UNMAXIMIZE, () => {
-				this.setState({ ...this.state, maximize: false });
-			}),
-			new EventManager(window.bridge, BridgeEvent.ENTER_FULL_SCREEN, () => {
-				this.setState({ ...this.state, fullscreen: true });
-			}),
-			new EventManager(window.bridge, BridgeEvent.LEAVE_FULL_SCREEN, () => {
-				this.setState({ ...this.state, fullscreen: false });
-			})
-		];
-	}
-	protected postCSS() {
-		return {
-			background: Color.DARK_000
+export class App extends React.Component<AppProps, AppState> {
+	public props: AppProps;
+	public state: AppState;
+	
+	constructor(props: AppProps) {
+		super(props);
+		this.props = props;
+		this.state = {
+			view: navigation.state.view,
+			terminal: false,
+			fullscreen: false
 		};
+		
+		window.bridge.handle(BridgeEvent.ENTER_FULL_SCREEN, () => {
+			this.setState({ ...this.state, fullscreen: true });
+		});
+		window.bridge.handle(BridgeEvent.LEAVE_FULL_SCREEN, () => {
+			this.setState({ ...this.state, fullscreen: false });
+		});
+		window.bridge.handle(BridgeEvent.TOGGLE_TERMINAL, () => {
+			this.setState({ ...this.state, terminal: !this.state.terminal });
+		});
+		navigation.handle((state) => {
+			this.setState({ ...this.state, view: state.after.view });
+		});
 	}
-	protected preCSS() {
-		return {};
-	}
-	protected build() {
+	public render() {
 		return (
-			<Column id={"root"}>
-				{/* TITLEBAR */}
-				{(() => {
-					if (!this.state.fullscreen) {
-						return (
-							<Draggable drag={true}>
-								<Row id="titlebar">
-									<Spacer>
-										<Navigator/>
-									</Spacer>
-									<Size width={Unit(75)}>
-										<section></section>
-									</Size>
-									<Size width={Unit(50)} height={Unit(40)}>
-										<Button id="minimize"
-											onMouseDown={(I) => {
-												window.API.minimize();
-											}}
-											onMouseEnter={(I) => {
-												I.style({ background: { color: Color.DARK_100 } });
-											}}
-											onMouseLeave={(I) => {
-												I.style(null);
-											}}
-											children={<Minimize/>}
-										/>
-										<Button id="maximize"
-											onMouseDown={(I) => {
-												if (this.state.maximize) {
-													window.API.unmaximize();
-												} else {
-													window.API.maximize();
-												}
-											}}
-											onMouseEnter={(I) => {
-												I.style({ background: { color: Color.DARK_100 } });
-											}}
-											onMouseLeave={(I) => {
-												I.style(null);
-											}}
-											children={this.state.maximize ? <Unmaximize/> : <Maximize/>}
-										/>
-										<Button id="close"
-											onMouseDown={(I) => {
-												window.API.close("titlebar");
-											}}
-											onMouseEnter={(I) => {
-												I.style({ background: { color: Color.SPOTLIGHT } });
-											}}
-											onMouseLeave={(I) => {
-												I.style(null);
-											}}
-											children={<Close/>}
-										/>
-									</Size>
-								</Row>
-							</Draggable>
-						);
-					}
-				})()}
-				{/* CONTENT */}
-				<section style={{ width: Unit(100, "%"), height: Unit(100, "%"), background: Color.DARK_200 }}>
-					<Viewport/>
+			<>
+				<TitleBar enable={!this.state.fullscreen}></TitleBar>
+				<section id="content" class="contrast">
+					<Browser enable={this.state.view === Viewport.BROWSER}></Browser>
+					<Viewer enable={this.state.view === Viewport.VIEWER}></Viewer>
+					<Overlay enable={this.state.terminal}></Overlay>
 				</section>
-			</Column>
+			</>
 		);
 	}
 }

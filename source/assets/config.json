@@ -1,37 +1,41 @@
 {
-	"version": "1.0.0",
-	"general": {
-		"dependency": [
+	"app": {
+		"requires": [
 			"storage"
 		]
 	},
-	"download": {
-		"file": "(id).(extension)",
-		"folder": "./downloads/",
-		"threads": 5,
-		"concurrent": 5
+	"search": {
+		"query": "",
+		"limit": 25
 	},
-	"navigator": {
-		"index": 0,
-		"pages": [
-			{
-				"type": "BROWSER",
-				"name": "language:all",
-				"args": {
-					"page": 0,
-					"clamp": 25,
-					"query": "language:all"
-				}
-			},
-			{
-				"type": "BROWSER",
-				"name": "language:korean",
-				"args": {
-					"page": 0,
-					"clamp": 25,
-					"query": "language:korean"
-				}
-			}
+	"storage": {
+		"period": 300000
+	},
+	"download": {
+		"directory": "./downloads",
+		"placeholder": "{id}",
+		"max_threads": 5,
+		"max_working": 5
+	},
+	"lazyload": {
+		"retry": 10
+	},
+	"gallery": {
+		"resolution": "lowest",
+		"censorship": true,
+		"discovery": [
+			"type",
+			"title",
+			"language",
+			"character",
+			"artist",
+			"series",
+			"group",
+			"tags",
+			"date"
 		]
+	},
+	"paging": {
+		"metre": 10
 	}
 }

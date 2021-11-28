@@ -5,49 +5,84 @@ import storage from "@/modules/storage";
 // states
 import { StateHandler } from "@/states";
 
-class Settings extends StateHandler<Config> {
+export class Settings extends StateHandler<Config> {
+	constructor(args: {
+		state: Config
+	}) {
+		super(args);
+		
+		storage.state["config"].state = super.state as Record<string, any>;
+	}
 	public get state() {
 		return super.state;
 	}
-	public set state(state: Args<Config>) {
-		super.state = new Config({ ...state });
-		// update config.json
-		storage.state["config"].state = super.state;
-	}
-	protected create() {
-		// update config.json
-		storage.state["config"].state = super.state;
+	public set state(state: Config) {
+		super.state = state;
+		storage.state["config"].state = super.state as Record<string, any>;
 	}
 }
 
-class Config {
-	public readonly version: typeof template["version"];
-	public readonly general: typeof template["general"];
-	public readonly download: typeof template["download"];
-	public readonly navigator: {
-		index: number;
-		pages: Array<{
-			type: string;
-			name: string;
-			args: any;
-		}>;
+export class Config {
+	public app: {
+		requires: Array<string>;
+	};
+	public search: {
+		query: string;
+		limit: number;
+	};
+	public storage: {
+		period: number;
+	};
+	public download: {
+		directory: string;
+		placeholder: string;
+		max_threads: number;
+		max_working: number;
+	};
+	public lazyload: {
+		retry: number;
+	};
+	public gallery: {
+		resolution: "lowest";
+		censorship: boolean;
+		discovery: string[];
+	};
+	public paging: {
+		metre: number;
 	};
 
-	constructor(args: Args<Config>) {
-		this.version = args.version;
-		this.general = args.general;
+	constructor(args: {
+		app: Config["app"];
+		search: Config["search"];
+		storage: Config["storage"];
+		download: Config["download"];
+		lazyload: Config["lazyload"];
+		gallery: Config["gallery"];
+		paging: Config["paging"];
+	}) {
+		this.app = args.app;
+		this.search = args.search;
+		this.storage = args.storage;
 		this.download = args.download;
-		this.navigator = args.navigator;
+		this.lazyload = args.lazyload;
+		this.gallery = args.gallery;
+		this.paging = args.paging;
 	}
 }
 
-const singleton = new Settings({
-	state: new Config({
-		version: (storage.state["config"].state as typeof template).version ?? template.version,
-		general: (storage.state["config"].state as typeof template).general ?? template.general,
-		download: (storage.state["config"].state as typeof template).download ?? template.download,
-		navigator: (storage.state["config"].state as typeof template).navigator ?? template.navigator
+export default (
+	//
+	// singleton
+	//
+	new Settings({
+		state: new Config({
+			app:		(storage.state["config"].state as Record<string, any> as Config).app		?? template.app,
+			search:		(storage.state["config"].state as Record<string, any> as Config).search		?? template.search,
+			storage:	(storage.state["config"].state as Record<string, any> as Config).storage	?? template.storage,
+			download:	(storage.state["config"].state as Record<string, any> as Config).download	?? template.download,
+			lazyload:	(storage.state["config"].state as Record<string, any> as Config).lazyload	?? template.lazyload,
+			gallery:	(storage.state["config"].state as Record<string, any> as Config).gallery	?? template.gallery,
+			paging:		(storage.state["config"].state as Record<string, any> as Config).paging		?? template.paging
+		})
 	})
-});
-
-export default singleton;
+)

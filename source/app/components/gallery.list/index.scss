@@ -1,0 +1,7 @@
+[data-component="gallery.list"] {
+	display: grid;
+	margin: 15px;
+	grid-gap: 15px;
+	grid-auto-rows: 475px;
+	grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+}

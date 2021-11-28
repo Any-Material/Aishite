@@ -1,0 +1,14 @@
+[data-component="button"] {
+	color: var(--colour_9);
+	transition: color var(--transition), background-color var(--transition);
+	&:hover {
+		cursor: pointer;
+		background-color: var(--colour_2);
+	}
+	> svg {
+		width: 11.5px;
+		height: 11.5px;
+		fill: var(--colour_9);
+		transition: fill var(--transition);
+	}
+}

@@ -6,21 +6,14 @@ import { MappedStateHandler } from "@/states";
 // api
 import { BridgeEvent } from "@/api";
 
-class Storage extends MappedStateHandler<Record<string, StorageState>> {
-	public get state() {
-		return super.state;
-	}
-	/**
-	 * Getter and Setter must share the same accessibility.
-	 * But since Getter is public, so do the setter must be,
-	 * and to prevent bulk define, this method will always throw an error.
-	 */
-	public set state(state: Storage["_state"]) {
-		throw new Error("bulk define storage may cause unwanted side effects");
-	}
-	protected create() {
-		for (const key of Object.keys(super.state)) {
-			this.register(key, super.state[key].path, super.state[key].state);
+export class Storage extends MappedStateHandler<Record<string, StorageState>> {
+	constructor(args: {
+		state: Storage["_state"];
+	}) {
+		super({ state: {} });
+
+		for (const key of Object.keys(args.state)) {
+			this.register(key, args.state[key].path, args.state[key].state);
 		}
 
 		setInterval(() => {
@@ -28,7 +21,12 @@ class Storage extends MappedStateHandler<Record<string, StorageState>> {
 				// export file
 				this.export(key);
 			}
-		}, 1000 * 60 * 5);
+		},
+		//
+		// 1000 milliseconds = 1 second
+		// 60 seconds = 1 minute
+		//
+		1000 * 60 * 5);
 
 		window.bridge.handle(BridgeEvent.CLOSE, () => {
 			for (const key of Object.keys(this.state)) {
@@ -37,6 +35,20 @@ class Storage extends MappedStateHandler<Record<string, StorageState>> {
 			}
 			window.API.close("storage");
 		});
+	}
+	public get state() {
+		return super.state;
+	}
+	/**
+	 * @deprecated this function will **ALWAYS** throw an error
+	 */
+	public set state(state: Storage["_state"]) {
+		//
+		// getter and setter must share the same accessibility,
+		// but since getter is public, so do the setter must be.
+		// to prevent bulk define, this function will always throw error.
+		//
+		throw new Error("bulk define storage may cause unwanted side effects");
 	}
 	public register(key: keyof Storage["_state"], path: StorageState["path"], fallback: StorageState["state"]) {
 		this.modify(key, this.import(path, fallback), (unsafe) => {
@@ -62,27 +74,33 @@ class Storage extends MappedStateHandler<Record<string, StorageState>> {
 	}
 }
 
-class StorageState {
+export class StorageState {
 	public readonly path: string;
-	public state: any;
+	public state: Record<string, any> | Array<any> | string;
 
-	constructor(args: Args<StorageState>) {
+	constructor(args: {
+		path: StorageState["path"];
+		state: StorageState["state"];
+	}) {
 		this.path = args.path;
 		this.state = args.state;
 	}
 }
 
-const singleton = new Storage({
-	state: {
-		"config": new StorageState({
-			path: "./config.json",
-			state: {}
-		}),
-		"bookmark": new StorageState({
-			path: "./bookmark.json",
-			state: []
-		})
-	}
-});
-
-export default singleton;
+export default (
+	//
+	// singleton
+	//
+	new Storage({
+		state: {
+			"config": new StorageState({
+				path: "./config.json",
+				state: {}
+			}),
+			"bookmark": new StorageState({
+				path: "./bookmark.json",
+				state: []
+			})
+		}
+	})
+)

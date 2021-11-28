@@ -1,18 +1,17 @@
 // electron
-import { app, session, BrowserWindow, ipcMain } from "electron";
+import { app, session, globalShortcut, BrowserWindow, ipcMain } from "electron";
 // api
 import { API_COMMAND, BridgeEvent } from "@/api";
 
 app.on("ready", () => {
 	// create window
 	const window = new BrowserWindow({
-		icon: "source/assets/aishite.ico",
+		icon: "source/assets/icons/icon.ico",
 		show: false,
 		frame: false,
-		width: 550,
-		height: 600,
-		minWidth: 550,
-		minHeight: 600,
+		minWidth: 775,
+		minHeight: 565,
+		backgroundColor: "#000000",
 		webPreferences: {
 			// webpack or ASAR
 			preload: require("path").resolve(__dirname, "preload.js"),
@@ -20,15 +19,16 @@ app.on("ready", () => {
 			nodeIntegration: true,
 			// isolate preload
 			contextIsolation: false
-
-		},
-		backgroundColor: "#00000000"
+		}
 	});
 	// webpack or ASAR
 	window.loadFile("build/index.html");
 	// development
 	if (!app.isPackaged) {
 		// hot-reload
+		require("fs").watch("build/main.js").on("change", () => {
+			window.reload();
+		});
 		require("fs").watch("build/preload.js").on("change", () => {
 			window.reload();
 		});
@@ -43,12 +43,16 @@ app.on("ready", () => {
 		details.requestHeaders["referer"] = "https://hitomi.la/";
 		return callback({ requestHeaders: details.requestHeaders });
 	});
+	// behaviours
 	window.on("ready-to-show", () => {
 		window.show();
 	});
 	window.on("unresponsive", () => {
 		window.reload();
 	});
+	/**
+	 * @see electron/renderer.ts
+	 */
 	window.on(BridgeEvent.CLOSE, (event) => {
 		// prevent close
 		event.preventDefault();
@@ -76,31 +80,43 @@ app.on("ready", () => {
 	window.on(BridgeEvent.LEAVE_FULL_SCREEN, () => {
 		window.webContents.send(BridgeEvent.LEAVE_FULL_SCREEN);
 	});
-	ipcMain.handle("API", (event, command: API_COMMAND, ...args: any[]) => {
-		setTimeout(() => {
-			switch (command) {
-				case API_COMMAND.CLOSE: {
-					return window.destroy();
-				}
-				case API_COMMAND.FOCUS: {
-					return window.focus();
-				}
-				case API_COMMAND.BLUR: {
-					return window.blur();
-				}
-				case API_COMMAND.MINIMIZE: {
-					return window.minimize();
-				}
-				case API_COMMAND.MAXIMIZE: {
-					return window.maximize();
-				}
-				case API_COMMAND.UNMAXIMIZE: {
-					return window.unmaximize();
-				}
-				case API_COMMAND.FULLSCREEN: {
-					return window.setFullScreen(!window.isFullScreen());
-				}
+	globalShortcut.register("F5", () => {
+		if (window.isFocused()) {
+			window.webContents.send(BridgeEvent.TOGGLE_TERMINAL)
+		}
+	});
+	/**
+	 * @see electron/preload.ts
+	 */
+	 ipcMain.handle("API", async (event, command: API_COMMAND, ...args: any[]) => {
+		switch (command) {
+			case API_COMMAND.CLOSE: {
+				return window.destroy();
 			}
-		}, /** @see https://github.com/electron/electron/issues/24759 */ 150);
+			case API_COMMAND.FOCUS: {
+				return window.focus();
+			}
+			case API_COMMAND.BLUR: {
+				return window.blur();
+			}
+			case API_COMMAND.MINIMIZE: {
+				return window.minimize();
+			}
+			case API_COMMAND.MAXIMIZE: {
+				return window.maximize();
+			}
+			case API_COMMAND.UNMAXIMIZE: {
+				return window.unmaximize();
+			}
+			case API_COMMAND.FULLSCREEN: {
+				return window.setFullScreen(!window.isFullScreen());
+			}
+			case API_COMMAND.DIRECTORY: {
+				return app.getPath("exe").replace(/([A-Za-z]+).exe/, "");
+			}
+			case API_COMMAND.PACKAGED: {
+				return app.isPackaged;
+			}
+		}
 	});
 });

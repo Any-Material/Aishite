@@ -17,7 +17,6 @@ const compiler = {
 		instance: undefined
 	}
 };
-
 const boilerplate = {
 	mode: "development",
 	watch: true,
@@ -30,7 +29,6 @@ const boilerplate = {
 	],
 	devtool: "eval-cheap-module-source-map"
 };
-
 compiler["main"].instance = webpack({
 	...main,
 	...boilerplate,
@@ -39,7 +37,6 @@ compiler["main"].instance = webpack({
 		...boilerplate.plugins
 	]
 }, () => { });
-
 compiler["preload"].instance = webpack({
 	...preload,
 	...boilerplate,
@@ -48,7 +45,6 @@ compiler["preload"].instance = webpack({
 		...boilerplate.plugins
 	]
 }, () => { });
-
 compiler["renderer"].instance = webpack({
 	...renderer,
 	...boilerplate,
@@ -57,19 +53,15 @@ compiler["renderer"].instance = webpack({
 		...boilerplate.plugins
 	]
 }, () => { });
-
 compiler["main"].instance.hooks.done.tap("done", () => {
-	return build("main");
+	build("main");
 });
-
 compiler["preload"].instance.hooks.done.tap("done", () => {
-	return build("preload");
+	build("preload");
 });
-
 compiler["renderer"].instance.hooks.done.tap("done", () => {
-	return build("renderer");
+	build("renderer");
 });
-
 function build(section) {
 	// update state
 	compiler[section].state = true;

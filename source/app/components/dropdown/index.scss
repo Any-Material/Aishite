@@ -1,0 +1,52 @@
+[data-component="dropdown"] {
+	position: relative;
+	> input {
+		color: var(--colour_level_0);
+		padding-left: 10px;
+		padding-right: 10px;
+		background-color: var(--colour_3);
+		transition: border-color var(--transition), background-color var(--transition);
+		&:hover, &:focus {
+			border-color: var(--colour_9);
+			background-color: var(--colour_4);
+		}
+	}
+	> #expandable {
+		position: absolute;
+		z-index: 99;
+		width: 100%;
+		top: 100%;
+		margin-top: 5px;
+		border-color: var(--colour_9);
+		background-color: var(--colour_4);
+		transition: visibility var(--transition), opacity var(--transition);
+		will-change: visibility, opacity;
+		&.active {
+			visibility: visible;
+			opacity: 100%;
+		}
+		&:not(.active) {
+			visibility: hidden;
+			opacity: 0%;
+		}
+		> [data-component="button"] {
+			color: var(--colour_9);
+			width: 100%;
+			padding: 6px 0px 6px 10px;
+			font-size: 15px;
+			transition: background-color var(--transition);
+			&:hover, &.active {
+				background-color: var(--colour_3);
+			}
+			&:after {
+				position: absolute;
+				content: attr(data-count);
+				color: var(--colour_level_0);
+				right: 10px;
+			}
+			> strong {
+				color: var(--colour_level_0);
+			}
+		}
+	}
+}

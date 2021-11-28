@@ -1,0 +1,40 @@
+[data-component="media.player"] {
+	overflow: hidden;
+	display: grid;
+	width: 100%;
+	height: 100%;
+	grid-template-areas:
+	"navigation scrollable";
+	grid-template-rows: 1fr;
+	grid-template-columns: auto 1fr;
+	> #scrollable {
+		grid-area: scrollable;
+		> [data-component="lazyload"] {
+			margin: auto;
+			width: 1000px;
+			height: auto;
+			min-width: 535px;
+			max-width: 100%;
+			background-color: var(--colour_3);
+		}
+	}
+	> #navigation {
+		display: flex;
+		flex-direction: column;
+		grid-area: navigation;
+		width: var(--navigation_width);
+		border-width: 0px;
+		border-right-width: thin;
+		background-color: var(--colour_1);
+		> button {
+			height: 30px;
+			> svg {
+				width: 17.5px;
+				height: 17.5px;
+			}
+		}
+		&:not(.enable) {
+			display: none;
+		}
+	}
+}

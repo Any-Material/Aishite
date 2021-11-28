@@ -1,9 +1,12 @@
-/** @see https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Using_XMLHttpRequest */
-class Request {
+export class Request {
+	/**
+	 * @see https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Using_XMLHttpRequest
+	 */
 	public async send(args: RequestOptions, progress?: (chunk: any, xhr: ProgressEvent<XMLHttpRequestEventTarget>) => void) {
 		return new Promise<RequestResponse>((resolve, reject) => {
 			const http = {
 				xhr: new XMLHttpRequest(),
+				index: 0,
 				headers: <Record<string, string>>{}
 			};
 			// ready
@@ -16,23 +19,32 @@ class Request {
 			}
 			http.xhr.addEventListener("readystatechange", () => {
 				if (http.xhr.readyState === http.xhr.HEADERS_RECEIVED) {
-					/** @see https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/getAllResponseHeaders */
+					/**
+					 * @see https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/getAllResponseHeaders
+					 */
 					for (const header of http.xhr.getAllResponseHeaders().trim().split(/[\r\n]+/)) {
 						// 0: key
 						// 1: value
-						const [key, value] = header.split(/:\s/) as [string, string];
-
-						http.headers[key] = value;
+						const fragment = header.split(/:\s/) as [string, string];
+	
+						http.headers[fragment[0]] = fragment[1];
 					}
 					// redirects
 					if (http.headers["location"] && (args.partial.redirects ?? 10) > (args.private.redirects ?? 0)) {
 						return this.send(
 							new RequestOptions({
 								...args,
-								request: { ...args.request, url: http.headers["location"] },
-								private: { ...args.private, redirects: (args.private.redirects ?? 0) + 1 }
-							}),
-							progress);
+								request: {
+									...args.request,
+									url: http.headers["location"]
+								},
+								private: {
+									...args.private,
+									redirects: (args.private.redirects ?? 0) + 1
+								}
+							}
+						),
+						progress);
 					}
 				}
 			});
@@ -41,13 +53,16 @@ class Request {
 					case 404: {
 						// retry
 						if ((args.partial.retry ?? 0) > (args.private.retry ?? 0)) {
-							// make new request
 							return this.send(
 								new RequestOptions({
 									...args,
-									private: { ...args.private, retry: (args.private.retry ?? 0) + 1 }
-								}),
-								progress);
+									private: {
+										...args.private,
+										retry: (args.private.retry ?? 0) + 1
+									}
+								}
+							),
+							progress);
 						}
 						// continue
 					}
@@ -64,10 +79,12 @@ class Request {
 				}
 			});
 			http.xhr.addEventListener("progress", (event) => {
-				if (progress && http.xhr.response) {
+				if (http.xhr.response && progress) {
 					switch (args.request.type) {
 						case "arraybuffer": {
-							throw new Error("Unimplemented");
+							progress((http.xhr.response as ArrayBuffer).skip(http.index), event);
+							http.index = (http.xhr.response as ArrayBuffer).byteLength;
+							break;
 						}
 						case "blob": {
 							throw new Error("Unimplemented");
@@ -111,7 +128,7 @@ class Request {
 	}
 }
 
-class RequestOptions {
+export class RequestOptions {
 	public readonly request: {
 		url: string;
 		type: XMLHttpRequestResponseType;
@@ -127,14 +144,18 @@ class RequestOptions {
 		redirects?: number;
 	};
 
-	constructor(args: Args<RequestOptions>) {
+	constructor(args: {
+		request: RequestOptions["request"];
+		partial: RequestOptions["partial"];
+		private: RequestOptions["private"];
+	}) {
 		this.request = args.request;
 		this.partial = args.partial;
 		this.private = args.private;
 	}
 }
 
-class RequestResponse {
+export class RequestResponse {
 	public readonly encode: string;
 	public readonly status: {
 		code: number;
@@ -142,13 +163,20 @@ class RequestResponse {
 	};
 	public readonly headers: Record<string, string>;
 
-	constructor(args: Args<RequestResponse>) {
+	constructor(args: {
+		encode: RequestResponse["encode"];
+		status: RequestResponse["status"];
+		headers: RequestResponse["headers"];
+	}) {
 		this.encode = args.encode;
 		this.status = args.status;
 		this.headers = args.headers;
 	}
 }
 
-const singleton = new Request();
-
-export default singleton;
+export default (
+	//
+	// singleton
+	//
+	new Request()
+)

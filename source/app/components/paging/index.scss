@@ -1,0 +1,32 @@
+[data-component="paging"] {
+	height: var(--paging_height);
+	background-color: var(--colour_1);
+	border-width: 0px;
+	border-top-width: thin;
+	will-change: display;
+	> * {
+		height: 100%;
+		width: 45px;
+		&.active {
+			color: var(--colour_level_0);
+		}
+		&:not(.enable) {
+			pointer-events: none;
+			> svg {
+				fill: var(--colour_2);
+			}
+		}
+	}
+	&:not(.enable) {
+		pointer-events: none;
+		> * {
+			color: var(--colour_2);
+			> svg {
+				fill: var(--colour_2);
+			}
+		}
+	}
+	&:not(.active) {
+		display: none;
+	}
+}

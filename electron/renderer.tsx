@@ -1,7 +1,8 @@
 // electron
 import { ipcRenderer } from "electron";
 // framework
-import ReactDOM from "react-dom";
+import * as React from "react";
+import * as ReactDOM from "react-dom";
 // components
 import App from "@/app";
 // modules
@@ -12,12 +13,7 @@ import { API_COMMAND, BridgeEvent } from "@/api";
 const certification: Array<string> = [];
 
 function call(command: API_COMMAND, ...args: any[]) {
-	return ipcRenderer.invoke("API", command, ...args).then((response) => {
-		console.debug({
-			command: command,
-			args: args,
-			response: response	
-		});
+	return ipcRenderer.invoke("API", command, args).then((response) => {
 		return response;
 	});
 }
@@ -47,7 +43,7 @@ window.API = {
 		} else {
 			throw new Error();
 		}
-		for (const validator of settings.state.general.dependency) {
+		for (const validator of settings.state.app.requires) {
 			if (!certification.contains(validator)) {
 				return window.bridge.trigger(BridgeEvent.CLOSE);
 			}
@@ -71,8 +67,15 @@ window.API = {
 	},
 	[API_COMMAND.FULLSCREEN]() {
 		return call(API_COMMAND.FULLSCREEN);
+	},
+	[API_COMMAND.DIRECTORY]() {
+		return call(API_COMMAND.DIRECTORY);
+	},
+	[API_COMMAND.PACKAGED]() {
+		return call(API_COMMAND.PACKAGED);
 	}
 }
+// ipc to bridge
 ipcRenderer.on(BridgeEvent.CLOSE, () => {
 	window.API.close("renderer");
 });
@@ -97,4 +100,8 @@ ipcRenderer.on(BridgeEvent.ENTER_FULL_SCREEN, () => {
 ipcRenderer.on(BridgeEvent.LEAVE_FULL_SCREEN, () => {
 	window.bridge.trigger(BridgeEvent.LEAVE_FULL_SCREEN);
 });
+ipcRenderer.on(BridgeEvent.TOGGLE_TERMINAL, () => {
+	window.bridge.trigger(BridgeEvent.TOGGLE_TERMINAL);
+});
+// render
 ReactDOM.render(<App></App>, document.getElementById("app"));

@@ -1,0 +1,14 @@
+[data-viewport="browser"] {
+	display: grid;
+	grid-template-areas:
+	"scrollable"
+	"paging";
+	grid-template-rows: 1fr auto;
+	grid-template-columns: 1fr;
+	> #scrollable {
+		grid-area: scrollable;
+	}
+	> [data-component="paging"] {
+		grid-area: paging;
+	}
+}

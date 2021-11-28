@@ -1,0 +1,28 @@
+[data-component="titlebar"] {
+	display: grid;
+	height: var(--titlebar_height);
+	background-color: var(--colour_1);
+	grid-template-areas:
+	". focus maximize close";
+	grid-template-rows: 1fr;
+	grid-template-columns: 1fr auto auto auto;
+	will-change: display;
+	> [data-component="button"] {
+		width: 45px;
+		&#focus {
+			grid-area: focus;
+		}
+		&#maximize {
+			grid-area: maximize;
+		}
+		&#close {
+			grid-area: close;
+			&:hover {
+				background-color: var(--colour_level_3);
+			}
+		}
+	}
+	&:not(.enable) {
+		display: none;
+	}
+}

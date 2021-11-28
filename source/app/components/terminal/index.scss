@@ -1,0 +1,31 @@
+[data-viewport="terminal"] {
+	display: grid;
+	grid-template-areas:
+	"history";
+	grid-template-rows: 1fr;
+	grid-template-columns: 1fr;
+	> #history {
+		grid-area: history;
+		> * {
+			width: 100%;
+			padding: 4px 10px 4px 10px;
+			color: var(--colour_9);
+			font-size: 15px;
+		}
+		> output {
+			&.bold {
+				font-weight: bold;
+			}
+			&.italic {
+				font-style: italic;
+			}
+		}
+		> input {
+			font-style: italic;
+			position: relative;
+		}
+	}
+	&::-webkit-scrollbar-track {
+		background-color: var(--colour_2);
+	}
+}

@@ -1,0 +1,8 @@
+[data-component="query"] {
+	> [data-component="dropdown"] {
+		display: grid;
+		margin: 15px;
+		grid-template-rows: var(--query_height);
+		grid-template-columns: 1fr;
+	}
+}

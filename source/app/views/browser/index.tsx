@@ -1,238 +1,249 @@
-// common
-import Unit from "@/app/common/unit";
-import Color from "@/app/common/color";
-import { Props } from "@/app/common/props";
-import { Stateful, EventManager } from "@/app/common/framework";
-// layout
-import Row from "@/app/layout/row";
-import Size from "@/app/layout/size";
-import Form from "@/app/layout/form";
-import Center from "@/app/layout/center";
-import Column from "@/app/layout/column";
-import Offset from "@/app/layout/offset";
-import Spacer from "@/app/layout/spacer";
-import Scroll from "@/app/layout/scroll";
-import Container from "@/app/layout/container";
-// widgets
-import Paging from "@/app/widgets/paging";
-import Gallery from "@/app/views/browser/gallery";
-// icons
-import Close from "@/app/icons/close";
+// framework
+import React from "react";
+// style
+import "./index.scss";
+// components
+import Query, { QueryProps } from "@/app/components/query";
+import GalleryList, { GalleryListProps } from "@/app/components/gallery.list";
+import Paging, { PagingProps } from "@/app/components/paging";
 // modules
-import { SearchQuery } from "@/modules/hitomi.la/search";
+import read from "@/modules/hitomi.la/gallery";
+import filter from "@/modules/hitomi.la/encode";
 import { GalleryBlock } from "@/modules/hitomi.la/gallery";
-// states
-import navigator from "@/states/navigator";
+import search, { GalleryPage } from "@/modules/hitomi.la/search";
+import discord, { RichPresence } from "@/modules/discord.rpc";
+import settings, { Config } from "@/modules/settings";
 
-class BrowserProps extends Props<undefined> {
-	public index: number;
-	public query: string;
-
-	constructor(args: Args<BrowserProps>) {
-		super(args);
-
-		this.index = args.index;
-		this.query = args.query;
-	}
+export interface BrowserProps extends Props {
+	enable: boolean;
 }
 
-class BrowserState extends BrowserProps {
-	public init: boolean;
-	public length: number;
-	public gallery: Array<GalleryBlock>;
-	public breakpoint: number;
-
-	constructor(args: Args<BrowserState>) {
-		super(args);
-
-		this.init = args.init;
-		this.length = args.length;
-		this.gallery = args.gallery;
-		this.breakpoint = args.breakpoint;
-	}
+export interface BrowserState {
+	query: QueryProps;
+	gallerylist: GalleryListProps;
+	paging: PagingProps;
+	session: {
+		history: Array<[string, number]>;
+		version: number;
+	};
+	blocks: [Array<GalleryBlock>, number];
 }
 
-class Browser extends Stateful<BrowserProps, BrowserState> {
-	protected create() {
-		// TODO: use this.binds instead
-		navigator.handle((state) => {
-			if (this.visible()) {
-				if (this.state.init) this.macro_0();
-				// combination of macro_0 and macro_1
-				else this.setState({ ...this.state, init: true, breakpoint: this.grid() }, () => { this.gallery(this.state.query, this.state.index); });
+export class Browser extends React.Component<BrowserProps> {
+	public props: BrowserProps;
+	public state: BrowserState;
+	public refer: {
+		query: React.RefObject<Query>;
+		paging: React.RefObject<Paging>;
+		gallerylist: React.RefObject<GalleryList>;
+	};
+
+	constructor(props: BrowserProps) {
+		super(props);
+		this.props = props;
+		this.state = {
+			query: {
+				enable: true,
+				options: {
+					value: settings.state.search.query
+				},
+				handler: {
+					confirm: (value) => {
+						return this.query_keydown(value);
+					}
+				}
+			},
+			gallerylist: {
+				options: {
+					blocks: []
+				},
+				handler: {
+					click: (button, key, value) => {
+						return this.gallerylist_click(button, key, value);
+					}
+				}
+			},
+			paging: {
+				enable: true,
+				options: {
+					size: 0,
+					index: 0
+				},
+				handler: {
+					click: (value) => {
+						return this.paging_click(value);
+					}
+				}
+			},
+			session: {
+				history: [],
+				version: 0
+			},
+			blocks: [[], 0]
+		};
+		this.refer = {
+			query: React.createRef(),
+			gallerylist: React.createRef(),
+			paging: React.createRef()
+		};
+
+		window.addEventListener("keydown", (event) => {
+			if (this.props.enable && this.state.blocks.length && !document.querySelectorAll("input:focus").length) {
+				switch (event.key) {
+					case "ArrowLeft": {
+						this.set_paging({ ...this.state.paging, options: { ...this.state.paging.options, index: (this.state.paging.options.index - 1).clamp(0, this.state.paging.options.size - 1) } });
+						break;
+					}
+					case "ArrowRight": {
+						this.set_paging({ ...this.state.paging, options: { ...this.state.paging.options, index: (this.state.paging.options.index + 1).clamp(0, this.state.paging.options.size - 1) } });
+						break;
+					}
+				}
 			}
 		});
-		return new BrowserState({ init: false, index: this.props.index, query: this.props.query, length: 0, gallery: [], breakpoint: 0 });
 	}
-	protected events() {
-		return [
-			new EventManager(window, "resize", () => {
-				if (this.visible()) this.macro_0();
-			}),
-			new EventManager(this.handler, "DID_MOUNT", () => {
-				if (this.visible()) this.macro_1();
-			})
-		];
+	public query_keydown(value: string) {
+		this.set_query({ ...this.state.query, options: { ...this.state.query.options, value: value } });
 	}
-	protected postCSS() {
-		return {};
-	}
-	protected preCSS() {
-		return {};
-	}
-	protected build() {
-		return (
-			<Column id={"browser"}>
-				{/* SCROLL */}
-				<Spacer>
-					<Scroll x={"hidden"} y={"auto"}>
-						<section data-scrollable>
-							{/* QUERY */}
-							<Offset type={"margin"} all={Unit(15)} bottom={Unit(0)}>
-								<Size height={Unit(40)}>
-									<Container decoration={{ border: { radius: Unit(4.5) }, shadow: [[Color.DARK_100, 0, 0, 5, 0]], background: { color: Color.DARK_300 } }}
-										onMouseEnter={(I) => {
-											I.style({ background: { color: Color.DARK_400 } });
-										}}
-										onMouseLeave={(I) => {
-											I.style(null);
-										}}>
-										<Size height={Unit(100, "%")}>
-											<Row>
-												<Offset type={"margin"} left={Unit(10)} right={Unit(10)}>
-													<Form id={"query"} toggle={!this.state.gallery.empty} fallback={this.state.query.length ? this.state.query : "language:all"}
-														onType={(text) => {
-															return true;
-														}}
-														onSubmit={(text) => {
-															// reset gallery
-															this.setState({ ...this.state, index: 0, query: text.length ? text : "language:all", length: 0, gallery: [] }, () => {
-																// update gallery
-																this.gallery(this.state.query, this.state.index);
-																// rename
-																navigator.rename(this.state.query);
-															});
-														}}
-													/>
-												</Offset>
-												<Size width={Unit(50)}>
-													<Center x={true} y={true}>
-														<Close color={Color.DARK_500}
-															onMouseDown={(I) => {
-																// reset gallery
-																this.setState({ ...this.state, index: 0, query: "language:all", length: 0, gallery: [] }, () => {
-																	// update gallery
-																	this.gallery(this.state.query, this.state.index);
-																	// rename
-																	navigator.rename(this.state.query);
-																});
-															}}
-															onMouseEnter={(I) => {
-																I.style(Color.TEXT_000);
-															}}
-															onMouseLeave={(I) => {
-																I.style(null);
-															}}
-														/>
-													</Center>
-												</Size>
-											</Row>
-										</Size>
-									</Container>
-								</Size>
-							</Offset>
-							{/* GALLERY-LIST */}
-							<Offset type={"margin"} all={Unit(7.5)}>
-								<section>
-									<Row wrap={true}>
-										{this.state.gallery.map((gallery, x) => {
-											return (
-												<Column key={x} basis={Unit(100 / this.state.breakpoint, "%")}>
-													<Offset type={"margin"} all={Unit(7.5)}>
-														<Gallery gallery={gallery}/>
-													</Offset>
-												</Column>
-											);
-										})}
-									</Row>
-								</section>
-							</Offset>
-						</section>
-					</Scroll>
-				</Spacer>
-				{/* PAGING */}
-				{(() => {
-					if (this.state.length > 1) {
-						return (
-							<Paging toggle={!this.state.gallery.empty} index={this.state.index} length={this.state.length} breakpoint={7}
-								onPageChange={(index) => {
-									if (!this.visible()) {
-										return false;
-									}
-									// reset gallery
-									this.setState({ ...this.state, index: index, gallery: [] }, () => {
-										// update gallery
-										this.gallery(this.state.query, this.state.index);
-									});
-									// approve
-									return true;
-								}}
-							/>
-						);
+	public gallerylist_click(button: number, key: string, value: string) {
+		switch (key) {
+			case "title":
+			case "date": {
+				break;
+			}
+			default: {
+				if (this.refer.query.current && Boolean(button) === new RegExp(`${key}:${value}`).test(this.refer.query.current.get()!)) {
+					switch (button) {
+						case 0: {
+							this.refer.query.current.set([...this.refer.query.current.get()!.split(/\s+/), `${key}:${value}`].join("\u0020"));
+							break;
+						}
+						case 2: {
+							this.refer.query.current.set([...this.refer.query.current.get()!.split(/\s+/)].map(($value) => { return new RegExp(`${key}:${value}`).test($value) ? undefined : $value; }).join("\u0020"));
+							break;
+						}
 					}
-				})()}
-			</Column>
-		);
-	}
-	/**
-	 * Based on 1920*1080
-	 */
-	public grid() {
-		return Math.round(window.outerWidth / (1920 / 5));
-	}
-	/**
-	 * Wwhether the component is visible
-	 */
-	public visible() {
-		// @ts-ignore
-		if (this.props["data-key"]) {
-			// @ts-ignore
-			return navigator.state.pages[navigator.state.index].widget.props["data-key"] === this.props["data-key"];
+				}
+				break;
+			}
 		}
-		return this.node()?.closest("section[style*=\"display: block\"]") !== null;
 	}
-	/**
-	 * Update gallery blocks based on current (state / props) `query` and `index`.
-	 */
-	public gallery(query: string, index: number) {
-		// fetch
-		SearchQuery(query).then((response) => {
-			// to avoid bottleneck, make requests then assign them in order
-			const block: Array<GalleryBlock> = [];
-			const array: Array<number> = response.skip(index ? index * 25 : 0).take(25);
-
-			for (let index = 0; index < array.length; index++) {
-				// fetch
-				GalleryBlock(array[index]).then((gallery) => {
-					// assigned
-					block[index] = gallery;
-					// check if every request is retrieved
-					if (block.length === array.length) {
-						// update
-						this.setState({ ...this.state, length: Math.ceil(response.length / 25), gallery: block });
+	public paging_click(value: number) {
+		this.set_paging({ ...this.state.paging, options: { ...this.state.paging.options, index: value } });
+	}
+	public set_session(value: BrowserState["session"]) {
+		this.setState({ ...this.state, session: value }, () => {
+			this.set_blocks([[], 0]);
+			search.get(filter.parse(value.history[value.version][0]), new GalleryPage({ index: value.history[value.version][1], limit: settings.state.search.limit })).then((galleries) => {
+				const list = [...galleries.list];
+				const blocks = new Array<GalleryBlock>(Math.min(galleries.length - settings.state.search.limit * value.history[value.version][1], settings.state.search.limit));
+				for (let index = 0; index < blocks.length; index++) {
+					read.block(list[index + (galleries.singular ? 0 : value.history[value.version][1] * settings.state.search.limit)]).then((block) => {
+						blocks[index] = block;
+						if (Object.keys(blocks).length === blocks.length) {
+							this.set_blocks([blocks, galleries.length]);
+						}
+					});
+				}
+			});
+		});
+	}
+	public set_blocks(value: BrowserState["blocks"]) {
+		this.setState({
+			...this.state,
+			blocks: value,
+			...(value[1] > 0 ? {
+				query: {
+					...this.state.query,
+					enable: true,
+				},
+				gallerylist: {
+					...this.state.gallerylist,
+					options: {
+						...this.state.gallerylist.options,
+						blocks: value[0]
 					}
-				}).catch(() => {
-					// fallback
-					return this.gallery("language:all", 0);
-				});
+				},
+				paging: {
+					...this.state.paging,
+					enable: true,
+					options: {
+						...this.state.paging.options,
+						size: ~~(value[1] / settings.state.search.limit)
+					}
+				}
+			} : {
+				query: {
+					...this.state.query,
+					enable: false,
+				},
+				gallerylist: {
+					...this.state.gallerylist,
+					options: {
+						...this.state.gallerylist.options,
+						blocks: []
+					}
+				},
+				paging: {
+					...this.state.paging,
+					enable: false
+				}
+			})
+		});
+	}
+	public set_query(value: BrowserState["query"]) {
+		this.setState({ ...this.state, query: value }, () => {
+			this.set_paging({ ...this.state.paging, options: { ...this.state.paging.options, index: 0 } });
+		});
+		settings.state = new Config({
+			...settings.state,
+			search: {
+				...settings.state.search,
+				query: value.options.value
 			}
 		});
 	}
-	public macro_0() {
-		const cache = this.grid(); if (cache !== this.state.breakpoint) this.setState({ ...this.state, breakpoint: cache });
+	public set_gallerylist(value: BrowserState["gallerylist"]) {
+		this.setState({ ...this.state, gallerylist: value });
 	}
-	public macro_1() {
-		this.setState({ ...this.state, init: true }, () => { this.gallery(this.state.query, this.state.index); });
+	public set_paging(value: BrowserState["paging"]) {
+		this.setState({ ...this.state, paging: value }, () => {
+			this.set_session({ history: [...this.state.session.history, [this.state.query.options.value, value.options.index]], version: this.state.session.version + 1 });
+		});
+	}
+	static getDerivedStateFromProps(after: BrowserProps, before: BrowserProps) {
+		return after;
+	}
+	public componentDidMount() {
+		this.set_session({ history: [[settings.state.search.query, 0]], version: 0 });
+	}
+	public render() {
+		if (this.props.enable) {
+			// discord
+			discord.update(new RichPresence({
+				// condition
+				...this.state.paging.enable ?
+				{
+					state: "Browsing",
+					partySize: this.state.paging.options.index + 1,
+					partyMax: this.state.paging.options.size
+				} : {
+					state: "Fetching",
+					partySize: undefined,
+					partyMax: undefined
+				},
+				details: this.state.query.options.value.length ? this.state.query.options.value : "language:all"
+			}));
+		}
+		return (
+			<section data-viewport="browser" class={inline({ "enable": this.props.enable, "left": true })}>
+				<section id="scrollable" class="scroll-y">
+					<Query ref={this.refer.query} enable={this.state.query.enable} options={this.state.query.options} handler={this.state.query.handler}></Query>
+					<GalleryList ref={this.refer.gallerylist} options={this.state.gallerylist.options} handler={this.state.gallerylist.handler}></GalleryList>
+				</section>
+				<Paging ref={this.refer.paging} enable={this.state.paging.enable} options={this.state.paging.options} handler={this.state.paging.handler}></Paging>
+			</section>
+		);
 	}
 }
 

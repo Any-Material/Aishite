@@ -1,0 +1,141 @@
+:root {
+	// colour(s)
+	--colour_0: #070707;
+	--colour_1: #111111;
+	--colour_2: #1b1b1b;
+	--colour_3: #252525;
+	--colour_4: #2e2e2e;
+	--colour_5: #383838;
+	--colour_6: #424242;
+	--colour_7: #4c4c4c;
+	--colour_8: #565656;
+	--colour_9: #5f5f5f;
+	--colour_level_0: #4b7a4b;
+	--colour_level_1: #4b547a;
+	--colour_level_2: #a7a74c;
+	--colour_level_3: #a03c3c;
+	// common
+	--transition: 250ms ease-in-out;
+	// component(s)
+	--navigation_width: 30px;
+	--titlebar_height: 30px;
+	--paging_height: 30px;
+	--query_height: 30px;
+}
+html {
+	overflow: hidden;
+}
+body, body * {
+	display: block;
+	margin: 0px;
+	padding: 0px;
+	border: none;
+	outline: none;
+	background: none;
+	user-select: none;
+	font-family: arial;
+	box-sizing: border-box;
+}
+svg {
+	pointer-events: none;
+	top: 0px;
+	left: 0px;
+	right: 0px;
+	bottom: 0px;
+	margin: auto;
+}
+::selection {
+	background: var(--colour_6);
+}
+::-webkit-scrollbar {
+	width: 10px;
+}
+::-webkit-scrollbar-track, ::-webkit-scrollbar-thumb {
+	border-left: thin solid var(--colour_0);
+}
+::-webkit-scrollbar-track {
+	background-color: var(--colour_1);
+}
+::-webkit-scrollbar-thumb {
+	background-color: var(--colour_level_0);
+}
+::-webkit-outer-spin-button, ::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+}
+.draggable {
+	-webkit-app-region: drag;
+}
+.un_draggable {
+	-webkit-app-region: no-drag;
+}
+.contrast {
+	border-width: thin;
+	border-style: solid;
+	border-color: var(--colour_0);
+}
+.center {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.center-x {
+	display: flex;
+	justify-content: center;
+}
+.center-y {
+	display: flex;
+	align-items: center;
+}
+.scroll-x {
+	overflow-x: auto;
+	overflow-y: hidden;
+}
+.scroll-y {
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+.eclipse {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+#app {
+	display: grid;
+	height: 100vh;
+	width: 100vw;
+	grid-template-areas:
+	"header"
+	"content";
+	grid-template-rows: auto 1fr;
+	grid-template-columns: 1fr;
+	> * {
+		overflow: hidden;
+		position: relative;
+	}
+	> [data-component="titlebar"] {
+		grid-area: header;
+	}
+	> #content {
+		grid-area: content;
+		border-top-width: 0px;
+		background-color: var(--colour_2);
+		> [data-viewport] {
+			position: absolute;
+			width: 100%;
+			height: 100%;
+			&[data-viewport="browser"], &[data-viewport="viewer"] {
+				transition: transform 500ms;
+				will-change: pointer-events, transform;
+				&:not(.enable) {
+					pointer-events: none;
+					&.left {
+						transform: translateX(-100%);
+					}
+					&.right {
+						transform: translateX(100%);
+					}
+				}
+			}
+		}
+	}
+}
