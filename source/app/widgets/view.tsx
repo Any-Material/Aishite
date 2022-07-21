@@ -1,8 +1,12 @@
+import React from "react";
+
 import Unit from "@/app/common/unit";
 import { Clear } from "@/app/common/props";
 import { Stateful, LifeCycle } from "@/app/common/framework";
 
 import history from "@/handles/history";
+import Center from "../layout/center";
+import Text from "../layout/text";
 
 interface ViewportProps extends Clear<undefined> {
 	// TODO: none
@@ -31,7 +35,7 @@ class Viewport extends Stateful<ViewportProps, ViewportState> {
 
 					// reorder
 					if (this.state.key === key && event.detail.before.pages.length === event.detail.after.pages.length) return;
-					
+
 					// render
 					this.setState((state) => ({ key: event.detail.after.pages[event.detail.after.index].element.key }), () => {
 						// reset scroll position
@@ -48,7 +52,35 @@ class Viewport extends Stateful<ViewportProps, ViewportState> {
 		return {};
 	}
 	protected build() {
-		return (<>{history.state.pages.map((page, index) => <section key={page.element.key} data-scrollable="frame" style={{ display: (this.state.key ? this.state.key === page.element.key : history.state.index === index) ? "block" : "none", width: Unit(100, "%"), height: Unit(100, "%"), overflow: "auto" }}>{page.element}</section>)}</>);
+		return (<>{history.state.pages.map((page, index) => <ErrorBoundery key={page.element.key} visible={this.state.key ? this.state.key === page.element.key : history.state.index === index}>{page.element}</ErrorBoundery>)}</>);
+	}
+}
+
+interface ErrorBounderyProps {
+	key: Nullable<React.Key>;
+	visible: boolean;
+	children: JSX.Element;
+}
+
+interface ErrorBounderyState {
+	error: boolean;
+}
+
+class ErrorBoundery extends React.Component<ErrorBounderyProps, ErrorBounderyState> {
+	constructor(props: ErrorBounderyProps) {
+		super(props);
+
+		this.state = ({ error: false });
+	}
+	/** Error boundery. */
+	static getDerivedStateFromError() {
+		return ({ error: true });
+	}
+	public render() {
+		if (this.state.error) {
+			return (<Center key={this.props.key} x={true} y={true}><Text children={[{ text: "OPS, SOMETHING WENT WRONG", weight: "bold" }]}/></Center>);
+		}
+		return (<section key={this.props.key} data-scrollable="frame" style={{ display: this.props.visible ? "block" : "none", width: Unit(100, "%"), height: Unit(100, "%"), overflow: "auto" }}>{this.props.children}</section>);
 	}
 }
 

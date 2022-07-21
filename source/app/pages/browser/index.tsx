@@ -97,7 +97,7 @@ class Browser extends Page<BrowserProps, BrowserState> {
 											const element = this.state.controller.current;
 
 											if (element) {
-												element.value = (element.value.trim().split(space).slice(0, -1).join(space).replace(/\s*&\s*$/, "") + space + "&" + space + this.state.suggests[index].first).replace(/^\s*&\s*/, "");
+												element.value = (element.value.trim().split(space).slice(0, -1).join(space).replace(/\s*[&?+-]\s*$/, "") + space + "&" + space + this.state.suggests[index].first).replace(/^\s*[&?+-]\s*/, "");
 											}
 										}}
 										onSelect={(text) => {
@@ -173,7 +173,7 @@ class Browser extends Page<BrowserProps, BrowserState> {
 																const element = this.state.controller.current;
 
 																if (element) {
-																	element.value = element.value.includes(tag) ? element.value.replace(tag, "").replace(/\s*&\s*$/, "") : (element.value + space + "&" + space + tag).replace(/^\s*&\s*/, "");
+																	element.value = element.value.includes(tag) ? element.value.replace(tag, "").replace(/\s*[&?+-]\s*[&?+-]\s*/, space + "&" + space).replace(/\s*[&?+-]\s*$/, "") : (element.value + space + "&" + space + tag).replace(/^\s*[&?+-]\s*/, "");
 																}
 															}}
 														/>
