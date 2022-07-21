@@ -150,15 +150,19 @@ class Parser {
 						this._table.set(namespace, new Set(response));
 					});
 				}
-				index += 3;
+				index += 4;
+				continue;
 			}
 			index += 1;
+			continue;
 		}
 		// wait for cache
 		await until(() => Array.from(this._table.values()).every((element) => element));
 
 		try {
-			return this.E();
+			const value = this.E();
+			
+			return value.isEmpty() ? this.fallback() : value;
 		} catch {
 			return this.fallback();
 		}

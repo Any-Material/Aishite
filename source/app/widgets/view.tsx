@@ -4,9 +4,10 @@ import Unit from "@/app/common/unit";
 import { Clear } from "@/app/common/props";
 import { Stateful, LifeCycle } from "@/app/common/framework";
 
+import Text from "@/app/layout/text";
+import Center from "@/app/layout/center";
+
 import history from "@/handles/history";
-import Center from "../layout/center";
-import Text from "../layout/text";
 
 interface ViewportProps extends Clear<undefined> {
 	// TODO: none
