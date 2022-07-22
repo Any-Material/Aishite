@@ -291,9 +291,9 @@ class Parser {
 	}
 	protected async fallback() {
 		// cache
-		if (!this._table.has("fallback")) this._table.set("fallback", new Set(await unknown_0(null, new Tag({ namespace: "index", value: "all" }))));
+		if (!this._table.has("language=all")) this._table.set("language=all", new Set(await unknown_0(null, new Tag({ namespace: "index", value: "all" }))));
 
-		return this._table.get("fallback") as Set<number>;
+		return this._table.get("language=all") as Set<number>;
 	}
 }
 

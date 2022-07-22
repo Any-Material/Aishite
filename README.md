@@ -80,19 +80,19 @@ Do note only double quotes is allowed.<br>
 
 - **MINUS**: Alawys remove **collection**'s elements from another regardless.<br>
 
-- **EQUAL**: and **NOT EQUAL**: Return gallery **collection** accordingly.<br>
+- **EQUAL** and **NOT EQUAL**: Return gallery **collection** accordingly.<br>
 
 Below is a usage example.<br>
 
 ```md
-language = "english" & type != "manga" or language = "english" & (language = "all" - type = "manga")
+language = "english" & type != "manga"
 ```
 
-Do note **NOT EQUAL** is a shorthand for `language = "all" - <identifier> = <literal>`.<br>
+Do note `<identifier> != <literal>` is a shorthand of `(language = "all" - <identifier> = <literal>)`.<br>
 
 If **parser** fails under any circumstances or result **collection** is empty, result of `language = "all"` will return as a **fallback**.<br>
 
-Below is list of available properties.<br>
+Below is full list of available properties.<br>
 
 ```md
 # string
@@ -109,7 +109,7 @@ character
 language
 ```
 
-Below is list of available functions.<br>
+Below is full list of available functions.<br>
 
 ```md
 # string
@@ -124,4 +124,4 @@ language = "english" + title("just some title string") + id = 69
 title("just some title string") + language = "english" + id = 69
 ```
 
-Do note **id** always contain single element thus using **AND** operator is not recommended.<br>
+Do note **id** always contain single element, thus using **AND** operator is not recommended.<br>
