@@ -52,7 +52,7 @@ npm run serve
 
 ## Search
 
-Do note parser supports parentheses.<br>
+Do note **parser** supports parentheses.<br>
 
 For **property** comparisons, syntax is as followed.<br>
 
