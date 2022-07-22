@@ -1,7 +1,7 @@
 {
 	"app": {
 		"request": {
-			"engine": "node_js"
+			"engine": "xhr"
 		},
 		"requires": [
 			"storage"
@@ -15,7 +15,7 @@
 				"name": "NEW TAB",
 				"args": {
 					"index": 0,
-					"query": "language(\"all\")"
+					"query": "language = \"all\""
 				}
 			}
 		]

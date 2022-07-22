@@ -165,7 +165,7 @@ function builder(title: string, type: string, args: Record<string, any>, uuid: s
 			break;
 		}
 		case "BROWSER": {
-			page.element = (<Browser ref={(ref) => proxy(ref, uuid)} key={uuid} data-key={uuid} index={args.index ?? 0} query={args.query ?? "language(\"all\")"} {...settings.state.override.browser}/>);
+			page.element = (<Browser ref={(ref) => proxy(ref, uuid)} key={uuid} data-key={uuid} index={args.index ?? 0} query={args.query ?? "language = \"all\""} {...settings.state.override.browser}/>);
 			break;
 		}
 		case "VIEWER": {

@@ -53,12 +53,13 @@ class Viewport extends Stateful<ViewportProps, ViewportState> {
 		return {};
 	}
 	protected build() {
-		return (<>{history.state.pages.map((page, index) => <ErrorBoundery key={page.element.key} visible={this.state.key ? this.state.key === page.element.key : history.state.index === index}>{page.element}</ErrorBoundery>)}</>);
+		return (<>{history.state.pages.map((page, index) => <ErrorBoundery key={page.element.key} unique={page.element.key} visible={this.state.key ? this.state.key === page.element.key : history.state.index === index}>{page.element}</ErrorBoundery>)}</>);
 	}
 }
 
 interface ErrorBounderyProps {
 	key: Nullable<React.Key>;
+	unique: Nullable<React.Key>;
 	visible: boolean;
 	children: JSX.Element;
 }
@@ -79,9 +80,9 @@ class ErrorBoundery extends React.Component<ErrorBounderyProps, ErrorBounderySta
 	}
 	public render() {
 		if (this.state.error) {
-			return (<Center key={this.props.key} x={true} y={true}><Text children={[{ text: "OPS, SOMETHING WENT WRONG", weight: "bold" }]}/></Center>);
+			return (<Center key={this.props.unique} x={true} y={true}><Text children={[{ text: "OPS, SOMETHING WENT WRONG", weight: "bold" }]}/></Center>);
 		}
-		return (<section key={this.props.key} data-scrollable="frame" style={{ display: this.props.visible ? "block" : "none", width: Unit(100, "%"), height: Unit(100, "%"), overflow: "auto" }}>{this.props.children}</section>);
+		return (<section key={this.props.unique} data-scrollable="frame" style={{ display: this.props.visible ? "block" : "none", width: Unit(100, "%"), height: Unit(100, "%"), overflow: "auto" }}>{this.props.children}</section>);
 	}
 }
 

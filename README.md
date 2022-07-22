@@ -50,4 +50,78 @@ npm run serve
 
 # Instruction
 
-W.I.P.
+## Search
+
+Do note parser supports parentheses.<br>
+
+For **property** comparisons, syntax is as followed.<br>
+
+```md
+<identifier> = <literal> or <identifier> != <literal>
+```
+
+For **function** calls, syntax is as followed.<br>
+
+```md
+<identifier>(<literal>)
+```
+
+**Literal** can be any of followed.<br>
+
+```md
+<literal> = <number> or <string>
+```
+
+Do note only double quotes is allowed.<br>
+
+- **AND**: Only extract matching results between two **collection**s.<br>
+
+- **PLUS**: Always combine **collection**s' elements regardless.<br>
+
+- **MINUS**: Alawys remove **collection**'s elements from another regardless.<br>
+
+- **EQUAL**: and **NOT EQUAL**: Return gallery **collection** accordingly.<br>
+
+Below is a usage example.<br>
+
+```md
+language = "english" & type != "manga" or language = "english" & (language = "all" - type = "manga")
+```
+
+Do note **NOT EQUAL** is a shorthand for `language = "all" - <identifier> = <literal>`.<br>
+
+If **parser** fails under any circumstances or result **collection** is empty, result of `language = "all"` will return as a **fallback**.<br>
+
+Below is list of available properties.<br>
+
+```md
+# string
+id
+# number
+type
+group
+series
+artist
+male
+female
+popular
+character
+language
+```
+
+Below is list of available functions.<br>
+
+```md
+# string
+title
+```
+
+Below is a usage example.<br>
+
+```md
+# contains the same elements but order differs
+language = "english" + title("just some title string") + id = 69
+title("just some title string") + language = "english" + id = 69
+```
+
+Do note **id** always contain single element thus using **AND** operator is not recommended.<br>

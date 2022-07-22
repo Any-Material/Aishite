@@ -83,21 +83,21 @@ class Browser extends Page<BrowserProps, BrowserState> {
 						<section>
 							<Grid.Region gap={{ inner: 15, outer: 15 }} rows={[40, Unit(1.0, "fr")]} columns={[Unit(1.0, "fr")]} template={[["query"], ["collection"]]}>
 								<Grid.Cell id="query">
-									<Dropdown toggle={!this.state.gallery.isEmpty()} index={0} items={this.state.suggests.map((suggestion) => new Pair(suggestion.first.namespace + ":" + suggestion.first.value, suggestion.second.toString()))} value={this.state.query === "language(\"all\")" ? undefined : this.state.query} fallback={this.state.query.isEmpty() ? "language(\"all\")" : this.state.query} highlight={this.state.highlight} controller={this.state.controller}
+									<Dropdown toggle={!this.state.gallery.isEmpty()} index={0} items={this.state.suggests.map((suggestion) => new Pair(suggestion.first.namespace + ":" + suggestion.first.value, suggestion.second.toString()))} value={this.state.query === "language = \"all\"" ? undefined : this.state.query} fallback={this.state.query.isEmpty() ? "language = \"all\"" : this.state.query} highlight={this.state.highlight} controller={this.state.controller}
 										onReset={() => {
 											// expire
 											suggest.outdate();
 
 											history.rename("NEW TAB");
 
-											this.display("language(\"all\")", 0);
+											this.display("language = \"all\"", 0);
 										}}
 										onIndex={(index) => {
 											// cache
 											const element = this.state.controller.current;
 
 											if (element) {
-												element.value = (element.value.trim().split(space).slice(0, -1).join(space).replace(/\s*[&?+-]\s*$/, "") + space + "&" + space + this.state.suggests[index].first).replace(/^\s*[&?+-]\s*/, "");
+												element.value = (element.value.trim().replace(/\s*(=|!=)\s*/g, ($0, $1) => $1).split(space).slice(0, -1).join(space).replace(/\s*[&?+-]\s*$/, "") + space + "&" + space + this.state.suggests[index].first).replace(/\s*(=|!=)\s*/g, ($0, $1) => space + $1 + space).replace(/^\s*[&?+-]\s*/, "");
 											}
 										}}
 										onSelect={(text) => {
@@ -107,14 +107,12 @@ class Browser extends Page<BrowserProps, BrowserState> {
 											this.setState((state) => ({ suggests: [] }));
 										}}
 										onSubmit={(text) => {
-											// cache
-											const query = text.isEmpty() ? "language(\"all\")" : text;
 											// expire
 											suggest.outdate();
 
-											history.rename(query.trim().split(space).map((value) => value.replace(/^(\D)\w+\("(\w+)"\)$/, ($0, $1, $2) => $1.toUpperCase() + ":" + $2.toLowerCase())).join(space));
+											history.rename("Searching...");
 
-											this.display(query, 0);
+											this.display(text.isEmpty() ? "language = \"all\"" : text, 0, (count) => history.rename(`${count} Results`));
 										}}
 										onChange={(text) => {
 											// expire
@@ -255,7 +253,7 @@ class Browser extends Page<BrowserProps, BrowserState> {
 			}
 		}
 	}
-	protected display(query: string, index: number) {
+	protected display(query: string, index: number, callback?: (count: number) => void) {
 		// reset
 		this.setState((state) => ({ query: query, gallery: [], suggests: [], highlight: "" }), () => {
 			// fetch
@@ -272,7 +270,12 @@ class Browser extends Page<BrowserProps, BrowserState> {
 
 						if (block.length === array.length) {
 							// update
-							this.setState((state) => ({ index: index, gallery: block, length: Math.ceil(response.size / 25) }), () => this.discord(true));
+							this.setState((state) => ({ index: index, gallery: block, length: Math.ceil(response.size / 25) }), () => {
+								// rich
+								this.discord(true);
+								// callback
+								callback?.(response.size);
+							});
 						}
 					}).catch((error) => print(error));
 				}

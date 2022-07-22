@@ -13,7 +13,9 @@ enum Symbol {
 	AND,
 	PLUS,
 	MINUS,
-	UNIQUE,
+	//
+	EQUAL,
+	N_EQUAL,
 	//
 	L_PAREN,
 	R_PAREN,
@@ -27,7 +29,7 @@ enum Symbol {
 }
 
 enum Channel {
-	VARIABLE,
+	PROPERTY,
 	FUNCTION
 }
 
@@ -37,6 +39,9 @@ class Token {
 		public readonly value?: unknown
 	) { }
 
+	public is(type: Symbol) {
+		return this.type === type;
+	}
 	public toString() {
 		// skip
 		if (this.value) return { type: Symbol[this.type], value: this.value };
@@ -65,6 +70,10 @@ class Parser {
 			this._tokens.push(new Token(symbol));
 
 			switch (symbol) {
+				case Symbol.N_EQUAL: {
+					index += 2;
+					break;
+				}
 				default: {
 					index += 1;
 					break;
@@ -79,10 +88,18 @@ class Parser {
 			switch (unprocessed.at(index)) {
 				case "&": { process(Symbol.AND); continue; }
 				case "+": { process(Symbol.PLUS); continue; }
+				case "=": { process(Symbol.EQUAL); continue; }
 				case "-": { process(Symbol.MINUS); continue; }
-				case "?": { process(Symbol.UNIQUE); continue; }
 				case "(": { process(Symbol.L_PAREN); continue; }
 				case ")": { process(Symbol.R_PAREN); continue; }
+				case "!": {
+					if (unprocessed.at(index + 1) === "=") {
+						process(Symbol.N_EQUAL);
+						continue;
+					}
+					// nani?
+					return exception();
+				}
 				case space: { index++; continue; }
 			}
 			// cache
@@ -132,36 +149,52 @@ class Parser {
 		if (this._tokens.isEmpty()) return this.fallback();
 
 		let index = 0;
-		// mapping
+
 		while (index < this._tokens.length) {
-			// cache
-			const [ID, L_PAREN, LITERAL, R_PAREN] = this._tokens.slice(index, index + 4);
+			switch (this._tokens[index].type) {
+				case Symbol.IDENTIFIER: {
+					// cache
+					const [id, unknown, value] = this._tokens.slice(index, index + 1 + 1 + 1); const namespace = id.value + (unknown.is(Symbol.N_EQUAL) ? "!" : "=") + value.value;
 
-			if (ID.type === Symbol.IDENTIFIER && L_PAREN?.type === Symbol.L_PAREN && (LITERAL?.type === Symbol.N_LITERAL || LITERAL?.type === Symbol.S_LITERAL) && R_PAREN?.type === Symbol.R_PAREN && built_in(Channel.FUNCTION)[this._tokens[index].value as never]) {
-				// cache
-				const namespace = ID.value + ":" + LITERAL.value;
+					const script = built_in(unknown.is(Symbol.L_PAREN) ? Channel.FUNCTION : Channel.PROPERTY);
 
-				if (!this._table.has(namespace)) {
-					// assign key
-					this._table.set(namespace, null);
+					if (script[id.value as never] && !this._table.has(namespace)) {
+						// assign key
+						this._table.set(namespace, null);
 
-					(built_in(Channel.FUNCTION)[ID.value as never]! as Function)((LITERAL.value as number).toString().replace(/_/g, space)).then((response: Array<number>) => {
-						// assign value
-						this._table.set(namespace, new Set(response));
-					});
+						(script[id.value as never]! as Function)((value.value as string).toString().replace(/_/g, space)).then(async (response: Array<number>) => {
+							// um...
+							if (unknown.is(Symbol.N_EQUAL)) {
+								// cache
+								const value = await this.fallback();
+
+								for (const element of new Set(response).values()) {
+									value.delete(element);
+								}
+								// assign value
+								this._table.set(namespace, value);
+							} else {
+								// assign value
+								this._table.set(namespace, new Set(response));
+							}
+						});
+					}
+					index += unknown.is(Symbol.L_PAREN) ? 4 : 3;
+					continue;
 				}
-				index += 4;
-				continue;
+				default: {
+					index += 1;
+					continue;
+				}
 			}
-			index += 1;
-			continue;
 		}
 		// wait for cache
 		await until(() => Array.from(this._table.values()).every((element) => element));
 
 		try {
+			// cache
 			const value = this.E();
-			
+
 			return value.isEmpty() ? this.fallback() : value;
 		} catch {
 			return this.fallback();
@@ -176,8 +209,7 @@ class Parser {
 			switch (this.peek().type) {
 				case Symbol.AND:
 				case Symbol.PLUS:
-				case Symbol.MINUS:
-				case Symbol.UNIQUE: {
+				case Symbol.MINUS: {
 					break;
 				}
 				default: {
@@ -209,12 +241,6 @@ class Parser {
 					}
 					break;
 				}
-				case Symbol.UNIQUE: {
-					for (const element of value.values()) {
-						if (_value.has(element)) value.delete(element);
-					}
-					break;
-				}
 			}
 		}
 	}
@@ -241,35 +267,43 @@ class Parser {
 		return value;
 	}
 	protected I() {
-		let value = new Set<number>();
+		const [token, unknown] = [this.peek(), this.skip()];
 
-		value = built_in(Channel.VARIABLE)[this.peek().value as never];
+		switch (unknown.type) {
+			case Symbol.EQUAL:
+			case Symbol.N_EQUAL:
+			case Symbol.L_PAREN: {
+				// raise
+				this.skip();
 
-		if (value) return value;
+				if (!this.peek().is(Symbol.N_LITERAL) && !this.peek().is(Symbol.S_LITERAL)) throw Error();
 
-		value = built_in(Channel.FUNCTION)[this.peek().value as never];
+				const value = this._table.get(token.value + (unknown.is(Symbol.N_EQUAL) ? "!" : "=") + this.peek().value) as Set<number>;
 
-		const [ID, L_PAREN, LITERAL, R_PAREN] = [this.peek(), this.skip(), this.skip(), this.skip()];
+				if (unknown.is(Symbol.L_PAREN) ? !this.skip().is(Symbol.R_PAREN) : false) throw Error();
 
-		if (value && L_PAREN.type === Symbol.L_PAREN && (LITERAL.type === Symbol.N_LITERAL || LITERAL.type === Symbol.S_LITERAL) && R_PAREN.type === Symbol.R_PAREN) return this._table.get(ID.value + ":" + LITERAL.value)!;
-
-		throw Error();
+				return value ?? new Set<number>();
+			}
+			default: {
+				throw Error();
+			}
+		}
 	}
 	protected async fallback() {
-		return new Set(await unknown_0(null, new Tag({ namespace: "index", value: "all" })));
+		// cache
+		if (!this._table.has("fallback")) this._table.set("fallback", new Set(await unknown_0(null, new Tag({ namespace: "index", value: "all" }))));
+
+		return this._table.get("fallback") as Set<number>;
 	}
 }
 
 function built_in(channel: Channel) {
 	switch (channel) {
-		case Channel.VARIABLE: {
-			return {};
-		}
-		case Channel.FUNCTION: {
+		case Channel.PROPERTY: {
 			return {
 				// id
 				id: async (value: string) => {
-					return [Number(value)];
+					return [value];
 				},
 				// tag
 				male: async (value: string) => {
@@ -277,20 +311,6 @@ function built_in(channel: Channel) {
 				},
 				female: async (value: string) => {
 					return unknown_0("tag", new Tag({ namespace: "female:" + value, value: "all" }));
-				},
-				// title
-				title: async (value: string) => {
-					try {
-						const bundle = await suggest.unknown_3("galleries", 0);
-						const digits = await suggest.unknown_5("galleries", suggest.unknown_1(value), bundle);
-						return unknown_1(digits);
-					} catch {
-						return [];
-					}
-				},
-				// language
-				language: async (value: string) => {
-					return unknown_0(null, new Tag({ namespace: "index", value: value }));
 				},
 				// etc
 				type: async (value: string) => {
@@ -310,6 +330,24 @@ function built_in(channel: Channel) {
 				},
 				character: async (value: string) => {
 					return unknown_0("character", new Tag({ namespace: value, value: "all" }));
+				},
+				// language
+				language: async (value: string) => {
+					return unknown_0(null, new Tag({ namespace: "index", value: value }));
+				}
+			};
+		}
+		case Channel.FUNCTION: {
+			return {
+				// title
+				title: async (value: string) => {
+					try {
+						const bundle = await suggest.unknown_3("galleries", 0);
+						const digits = await suggest.unknown_5("galleries", suggest.unknown_1(value), bundle);
+						return unknown_1(digits);
+					} catch {
+						return [];
+					}
 				}
 			};
 		}

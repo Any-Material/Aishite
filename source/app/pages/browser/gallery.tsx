@@ -149,16 +149,20 @@ class Gallery extends Stateful<GalleryProps, GalleryState> {
 																		let callback: Tag;
 
 																		switch (section.key) {
+																			case "id": {
+																				callback = new Tag({ namespace: section.key, value: Number(chip) });
+																				break;
+																			}
 																			case "type": {
 																				callback = new Tag({ namespace: "type", value: chip.toString().replace(/\s/g, "") });
 																				break;
 																			}
-																			case "characters": {
-																				callback = new Tag({ namespace: "character", value: chip.toString() });
-																				break;
-																			}
 																			case "language": {
 																				callback = new Tag({ namespace: "language", value: Object.keys(languages).filter((tongue) => languages[tongue as keyof typeof languages] === chip)[0] });
+																				break;
+																			}
+																			case "characters": {
+																				callback = new Tag({ namespace: "character", value: chip.toString() });
 																				break;
 																			}
 																			case "artists": {
