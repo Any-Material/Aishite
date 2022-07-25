@@ -18,7 +18,7 @@ class History extends StateHandler<HistoryState> {
 		// assign
 		super.state = state;
 		// update settings.json
-		reflect();
+		save_settings();
 	}
 	protected create() {
 		window.addEventListener("keydown", (event) => {
@@ -139,11 +139,11 @@ function proxy(ref: Nullable<React.Component>, uuid: string) {
 	// attach
 	if (ref?.componentDidUpdate) {
 		// append
-		ref.componentDidUpdate = inject(ref.componentDidUpdate, () => reflect());
+		ref.componentDidUpdate = inject(ref.componentDidUpdate, () => save_settings());
 	}
 }
 
-function reflect() {
+function save_settings() {
 	setTimeout(() => {
 		settings.state = {
 			...settings.state,

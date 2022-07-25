@@ -41,10 +41,7 @@ class _Gallery extends Gallery {
 
 		await until(() => !!gg_js && !!common_js);
 
-		for (let index = 0; index < metadata["files"].length; index++) {
-			// cache
-			const file = metadata["files"][index];
-
+		for (const file of metadata["files"]) {
 			cache.add(new _GalleryFile({
 				url: eval(gg_js! + common_js! + "url_from_url_from_hash(this.id, file, \"webp\", undefined, \"a\")"),
 				name: file["name"],
