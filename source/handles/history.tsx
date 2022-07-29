@@ -17,8 +17,10 @@ class History extends StateHandler<HistoryState> {
 	public set state(state: History["_state"]) {
 		// assign
 		super.state = state;
+		// update title
+		title();
 		// update settings.json
-		save_settings();
+		reflect();
 	}
 	protected create() {
 		window.addEventListener("keydown", (event) => {
@@ -27,6 +29,8 @@ class History extends StateHandler<HistoryState> {
 				this.close();
 			}
 		});
+		// update title
+		title(this.state.pages[this.state.index])
 	}
 	/** Append `page` as well as change `this.state.index`. */
 	public open(title: string, type: string, args: Record<string, any>) {
@@ -139,11 +143,15 @@ function proxy(ref: Nullable<React.Component>, uuid: string) {
 	// attach
 	if (ref?.componentDidUpdate) {
 		// append
-		ref.componentDidUpdate = inject(ref.componentDidUpdate, () => save_settings());
+		ref.componentDidUpdate = inject(ref.componentDidUpdate, () => reflect());
 	}
 }
 
-function save_settings() {
+function title(page: Page = singleton.state.pages[singleton.state.index]) {
+	document.title = `${classname(page.element)} - ${page.title}`;
+}
+
+function reflect() {
 	setTimeout(() => {
 		settings.state = {
 			...settings.state,
@@ -161,15 +169,15 @@ function builder(title: string, type: string, args: Record<string, any>, uuid: s
 
 	switch (type) {
 		case "FALLBACK": {
-			page.element = (<Fallback ref={(ref) => proxy(ref, uuid)} key={uuid} data-key={uuid} {...settings.state.override.fallback}/>);
+			page.element = (<Fallback ref={(ref) => proxy(ref, uuid)} key={uuid} data-key={uuid} {...settings.state.override.fallback} />);
 			break;
 		}
 		case "BROWSER": {
-			page.element = (<Browser ref={(ref) => proxy(ref, uuid)} key={uuid} data-key={uuid} index={args.index ?? 0} query={args.query ?? "language = \"all\""} {...settings.state.override.browser}/>);
+			page.element = (<Browser ref={(ref) => proxy(ref, uuid)} key={uuid} data-key={uuid} index={args.index ?? 0} query={args.query ?? "language = \"all\""} {...settings.state.override.browser} />);
 			break;
 		}
 		case "VIEWER": {
-			page.element = (<Viewer ref={(ref) => proxy(ref, uuid)} key={uuid} data-key={uuid} factor={args.factor ?? Layout.width} gallery={args.gallery ?? 0} {...settings.state.override.viewer}/>);
+			page.element = (<Viewer ref={(ref) => proxy(ref, uuid)} key={uuid} data-key={uuid} factor={args.factor ?? Layout.width} gallery={args.gallery ?? 0} {...settings.state.override.viewer} />);
 			break;
 		}
 		default: {
