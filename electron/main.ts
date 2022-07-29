@@ -68,7 +68,7 @@ app.on("ready", () => {
 	
 	// create window
 	window = new BrowserWindow({
-		icon: "source/assets/aishite.ico",
+		icon: "source/assets/icon.ico",
 		show: false,
 		frame: false,
 		width: Resolution.width(),

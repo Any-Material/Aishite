@@ -19,7 +19,7 @@ window.addEventListener("keydown", (event) => {
 });
 
 if (!process.env.NODE_ENV) {
-	// https://github.com/Any-Material/Aishite/releases/download/{version}/{artifact}
+	// https://github.com/Any-Material/{repo}/releases/download/{version}/{artifact}
 	client.GET("https://api.github.com/repos/Any-Material/Aishite/releases?per_page=100", "json").then((response) => {
 		// parse version string to number
 		function version(value: string) {

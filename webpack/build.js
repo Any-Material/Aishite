@@ -84,8 +84,8 @@ function build(section) {
 							nsis: {
 								oneClick: false,
 								perMachine: true,
-								installerIcon: "../source/assets/aishite.ico",
-								uninstallerIcon: "../source/assets/aishite.ico"
+								installerIcon: "../source/assets/icon.ico",
+								uninstallerIcon: "../source/assets/icon.ico"
 							},
 							files: [
 								"build/*.js",
@@ -95,7 +95,7 @@ function build(section) {
 							directories: {
 								output: "releases"
 							},
-							icon: "../source/assets/aishite.ico"
+							icon: "../source/assets/icon.ico"
 						}
 					});
 				}

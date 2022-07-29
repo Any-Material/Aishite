@@ -10,11 +10,11 @@ class RichPresence {
 	readonly smallImageText?: string;
 	readonly primaryButton?: {
 		readonly label: string;
-		readonly url?: string;
+		readonly url: string;
 	};
 	readonly secondaryButton?: {
 		readonly label: string;
-		readonly url?: string;
+		readonly url: string;
 	};
 	readonly partyId?: string;
 	readonly partyMax?: number;
@@ -48,7 +48,7 @@ class RichPresence {
 	public toJSON() {
 		// cache
 		const buttons = [this.primaryButton, this.secondaryButton].filter((button) => button);
-
+		
 		return {
 			pid: process.pid,
 			activity: {
@@ -89,17 +89,19 @@ class Discord {
 		this._connection = false;
 
 		until(() => this._client !== null).then(() => {
+			// attach before create
 			this._client.on("ready", () => {
 				// update
 				this._connection = true;
-			});
-			this._client.on("disconnected", () => {
-				// update
-				this._connection = false;
-				// recreate
-				this.create()
-				// reconnect
-				this.connect();
+				// @ts-ignore
+				this._client.transport.socket.on("close", () => {
+					// update
+					this._connection = false;
+					// recreate
+					this.create()
+					// reconnect
+					this.connect();
+				});
 			});
 			// connect
 			this.connect();
@@ -131,10 +133,10 @@ const singleton = new Discord(
 		details: "Starting...",
 		// large image
 		largeImageKey: "icon",
-		largeImageText: "Thine shine I'll be...",
+		largeImageText: "Strawberry Flavour",
 		// small image
 		smallImageKey: "discord",
-		smallImageText: "Unavailable",
+		smallImageText: "it's gone...",
 		// buttons
 		primaryButton: {
 			label: "Get Aishite for FREE!",
@@ -143,7 +145,7 @@ const singleton = new Discord(
 		// time elapsed
 		startTimestamp: Date.now()
 	}),
-	"526951055079112724"
+	"1002386178055614474"
 );
 
 export default singleton;
